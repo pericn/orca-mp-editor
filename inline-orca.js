@@ -52,6 +52,7 @@ Array.from(document.querySelectorAll('h2')).forEach(h2 => {
       const img = document.createElement('img');
       img.setAttribute('src', bgMatch[1]);
       img.setAttribute('style', newStyle);
+      img.setAttribute('alt', 'h2-bg');
       // 替换 span 为 img
       span.replaceWith(img);
     }
