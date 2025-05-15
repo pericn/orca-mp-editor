@@ -92,7 +92,8 @@
   margin: 2rem 0 0.5rem;
   position: relative;
   padding-left: 0.5em;
-
+text-wrap: nowrap;
+  
   
 }
 
