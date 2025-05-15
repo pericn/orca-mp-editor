@@ -1,0 +1,215 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    background-color: #f3f3f3;
+    position: sticky;
+}
+
+h3 {
+    font-size: 14px;
+    color: #202025;
+    margin: 0 0 10px;
+}
+/* 目录树样式 */
+#sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 20%;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid #ccc;
+  background-color: #ffffff;
+  padding: 0.7rem 1rem 0.5rem;
+  box-sizing: border-box;
+  overflow-x: auto; /* 启用水平滚动条 */
+}
+
+#fileTree {
+  cursor: pointer;
+  font-size: 14px;
+  color: #6d757d;
+  list-style: none; /* 去掉默认的列表样式 */
+  margin: 0;
+  padding: 0;
+  white-space: nowrap; /* 禁止换行 */
+}
+
+#fileTree ul {
+  margin: 0;
+  padding: 0 0 0 8px; /* 缩进子节点 */
+}
+
+#fileTree li {
+  margin: 10px 0;
+  list-style: none;
+  width: 100%; /* 确保列表项占满父容器 */
+  box-sizing: border-box; /* 包括 padding 和 border */
+}
+
+#fileTree span {
+  display: inline-block;
+  cursor: pointer;
+  white-space: nowrap; /* 禁止换行 */
+  max-width: 90%; /* 设置最大宽度，防止超出容器 */
+  vertical-align: middle; /* 垂直居中 */
+}
+
+
+
+.wx-header {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: calc(100% - 20%); /* 宽度限制在右侧内容区域 */
+  height: 40px;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  transition: width 0.3s; /* 添加平滑过渡效果 */
+}
+
+.wx-header .toggle-sidebar-btn,
+.wx-header .menu-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wx-header .menu-btn {
+    margin-left: auto;
+    /* 将菜单按钮推到右侧 */
+    margin-bottom: 9px;
+    justify-content: center;
+}
+
+.wx-header .menu-btn::before {
+    content: '···';
+    font-weight: 400;
+}
+
+.toggle-sidebar-btn {
+  cursor: pointer;
+  font-size: 18px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+}
+
+.menu-wrapper {
+    position: absolute;
+    right: 16px;
+    top: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.menu-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 15px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    min-width: 120px;
+    white-space: nowrap;
+}
+
+.menu-dropdown li {
+    padding: 10px 16px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.menu-wrapper:hover .menu-dropdown,
+.menu-dropdown:hover {
+    display: block;
+}
+
+#content {
+  flex: 1; /* 让右侧内容区域占据剩余空间 */
+  padding: 1rem;
+  margin-left: 20%; /* 确保右侧内容区域不会覆盖左侧目录树 */
+  position: relative; /* 确保 wx-header 的绝对定位基于 #content */
+  box-sizing: border-box;
+}
+
+.article-container {
+  max-width: 393px; /* 微信公众号文章宽度 */
+  margin: 40px auto auto;
+  background-color: #fff;
+  padding: 20px;
+}
+
+
+.article-header h1 {
+    font-size: 22px;
+    line-height: 1.4;
+    font-weight: 500;
+    margin: 0 0 14px;
+    /* 修改此行，设置 margin-top 为 0 */
+    color: #000;
+    word-wrap: break-word;
+    /* 防止标题超出屏幕范围 */
+}
+
+.article-header p {
+    font-size: 14px;
+    color: #bbb;
+    margin: 0 0 22px 0;
+    display: flex;
+    /* 使用 flex 布局 */
+    align-items: center;
+    /* 垂直居中 */
+    gap: 10px;
+    /* 添加间距 */
+}
+
+.article-header a {
+    color: #576b95;
+    text-decoration: none;
+}
+
+.article-header a:hover {
+    text-decoration: underline;
+}
+
+.article-footer {
+    font-size: 14px;
+    color: #888;
+    text-align: center;
+    margin-top: 20px;
+    border-top: 1px solid #ddd;
+    padding-top: 10px;
+}
+
+.article-footer a {
+    color: #576b95;
+    text-decoration: none;
+}
+
+.article-footer a:hover {
+    text-decoration: underline;
+}

@@ -33,7 +33,7 @@
       z-index: 1000;
       box-sizing: border-box;
     }
-    .wx-header .close-btn,
+    .wx-header .toggle-sidebar-btn,
     .wx-header .menu-btn {
       width: 24px;
       height: 24px;
@@ -49,7 +49,7 @@
       position: relative; /* 新增 */
       justify-content: center;
     }
-    .wx-header .close-btn::before {
+    .wx-header .toggle-sidebar-btn::before {
       content: '×';
       font-weight: 200;
       font-size: 32px;
@@ -151,7 +151,7 @@
 <body>
   <!-- 微信标题栏 -->
   <div class="wx-header">
-    <div class="close-btn"></div>
+    <div class="toggle-sidebar-btn"></div>
     <div class="menu-wrapper">
       <div class="menu-btn"></div>
       <ul class="menu-dropdown">
