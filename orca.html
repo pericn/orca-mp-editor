@@ -21,22 +21,39 @@
   <link rel="manifest" href="/assets/icons/site.webmanifest">
 
 
-  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="长条儿鲸" />
   <meta name="theme-color" content="#ffffff" />
 
   <title>Orca Preview</title>
-  <link rel="stylesheet" href="function.css">
-  <link rel="stylesheet" href="orca.css">
+  <link rel="stylesheet" href="/assets/css/function.css">
+  <link rel="stylesheet" href="/assets/css/orca.css">
 </head>
 
 <body>
   <div style="display: flex; height: 100vh;">
     <!-- 左侧目录树 -->
     <div id="sidebar">
-      <h3>Markdown 文件</h3>
-      <ul id="fileTree"></ul>
+      <div class="sidebar-header">
+        <div class="logo">
+          <img src="/assets/ui/icons/nav/logo.svg" alt="Orca">
+          <span>Orca</span>
+        </div>
+        <div class="menu-dropdown">
+          <img src="/assets/ui/icons/nav/menu.svg" alt="menu" class="menu-icon">
+          <ul class="dropdown-menu">
+            <li id="select-docs-folder">选择文档库位置</li>
+            <li id="refresh-btn">刷新</li>
+          </ul>
+        </div>
+      </div>
+      <div id="fileTree">
+        <!-- 只显示一个大按钮，居中 -->
+        <div class="no-docs-folder simple-center">
+          <button class="select-folder-btn" id="select-docs-folder-btn">选择本地文档库</button>
+        </div>
+      </div>
     </div>
 
     <div id="content">
@@ -47,6 +64,7 @@
           <div class="menu-btn"></div>
           <ul class="menu-dropdown">
             <li id="refresh-btn">刷新</li>
+            <li id="select-docs-folder">选择文档库位置</li>
             <li id="copy-to-wechat">复制到公众号</li>
             <li id="show-clipboard-menu">复制HTML</li>
           </ul>

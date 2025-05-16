@@ -90,71 +90,43 @@ function createTreeNode(node) {
   }
 }
 
-// 渲染目录树
-async function renderFileTree() {
-  try {
-    showLoading('正在加载文件列表...');
-    const response = await fetch('/api/articles');
-    const tree = await response.json();
-    const fileTree = document.getElementById('fileTree');
-    fileTree.innerHTML = '';
-
-    // 如果只有一个文件夹，直接展开其内容
-    if (tree.length === 1 && tree[0].type === 'directory') {
-      const singleFolder = tree[0];
-      singleFolder.children
-        .sort((a, b) => {
-          if (a.type !== b.type) {
-            return a.type === 'directory' ? -1 : 1;
-          }
-          return a.name.localeCompare(b.name);
-        })
-        .forEach(child => fileTree.appendChild(createTreeNode(child)));
-    } else {
-      tree.forEach(node => fileTree.appendChild(createTreeNode(node)));
-    }
-  } catch (error) {
-    console.error('渲染文件树时出错:', error);
-    showError('加载文件列表失败，请刷新页面重试');
-  } finally {
-    hideLoading();
-  }
-}
-
 // 加载 Markdown 文件并渲染
-async function loadMarkdown(filePath) {
+async function loadMarkdown(content) {
   try {
     showLoading('正在加载文档...');
-    const fileName = filePath.split('/').pop().replace('.md', '');
-    const response = await fetch(`/api/article?path=${encodeURIComponent(filePath)}`);
     
-    if (!response.ok) {
-      throw new Error(`加载文件失败: ${filePath}`);
-    }
-    
-    let markdown = await response.text();
-    markdown = markdown.replace(/^---[\s\S]*?---/, '').trim();
+    // 移除 YAML front matter
+    content = content.replace(/^---[\s\S]*?---/, '').trim();
 
-    const titleMatch = markdown.match(/^#\s+(.*)$/m);
-    const title = titleMatch ? titleMatch[1].trim() : fileName;
+    // 提取标题
+    const titleMatch = content.match(/^#\s+(.*)$/m);
+    const title = titleMatch ? titleMatch[1].trim() : '未命名文档';
 
+    // 移除标题
     if (titleMatch) {
-      markdown = markdown.replace(/^#\s+.*$/m, '').trim();
+      content = content.replace(/^#\s+.*$/m, '').trim();
     }
 
-    let renderedContent = md.render(markdown);
+    // 渲染 Markdown
+    let renderedContent = md.render(content);
+    
+    // 处理 h2 标签中的换行
     renderedContent = renderedContent.replace(/<h2(.*?)>(.*?)<\/h2>/g, (match, attrs, content) => {
       const processedContent = content.replace(/&lt;br&gt;/g, '<br>');
       return `<h2${attrs}>${processedContent}</h2>`;
     });
 
+    // 更新标题
     const titleElement = document.querySelector('#content h1');
     if (titleElement) {
       titleElement.textContent = title;
     }
 
+    // 更新内容
     const contentDiv = document.querySelector('#content main.note-to-mp');
-    contentDiv.innerHTML = renderedContent;
+    if (contentDiv) {
+      contentDiv.innerHTML = renderedContent;
+    }
   } catch (error) {
     console.error('加载 Markdown 文件时出错:', error);
     showError('加载文档失败，请重试');
@@ -188,7 +160,6 @@ export function hideLoading() {
 }
 
 export function showError(message) {
-  console.log('Showing error toast:', message);
   const toast = document.createElement('div');
   toast.className = 'toast error';
   toast.innerHTML = `
@@ -196,20 +167,15 @@ export function showError(message) {
     <div class="message">${message}</div>
   `;
   document.body.appendChild(toast);
-  console.log('Toast element created:', toast);
   
-  // 强制重排以启动动画
   requestAnimationFrame(() => {
-    console.log('Adding show class to toast');
     toast.classList.add('show');
   });
   
   setTimeout(() => {
-    console.log('Removing show class from toast');
     toast.classList.remove('show');
     setTimeout(() => {
       if (toast.parentNode) {
-        console.log('Removing toast element from DOM');
         document.body.removeChild(toast);
       }
     }, 300);
@@ -217,7 +183,6 @@ export function showError(message) {
 }
 
 export function showSuccess(message) {
-  console.log('Showing success toast:', message);
   const toast = document.createElement('div');
   toast.className = 'toast success';
   toast.innerHTML = `
@@ -225,20 +190,15 @@ export function showSuccess(message) {
     <div class="message">${message}</div>
   `;
   document.body.appendChild(toast);
-  console.log('Toast element created:', toast);
   
-  // 强制重排以启动动画
   requestAnimationFrame(() => {
-    console.log('Adding show class to toast');
     toast.classList.add('show');
   });
   
   setTimeout(() => {
-    console.log('Removing show class from toast');
     toast.classList.remove('show');
     setTimeout(() => {
       if (toast.parentNode) {
-        console.log('Removing toast element from DOM');
         document.body.removeChild(toast);
       }
     }, 300);
@@ -253,8 +213,201 @@ function createLoadingElement() {
   return loading;
 }
 
+// 文档库路径存储键名
+const DOCS_FOLDER_KEY = 'orca_docs_folder';
+
+// 保存文件夹句柄
+async function saveDocsFolder(dirHandle) {
+  try {
+    // 请求持久化权限
+    const permissionStatus = await dirHandle.requestPermission({ mode: 'read' });
+    if (permissionStatus === 'granted') {
+      // 保存文件夹句柄
+      window._docsFolderHandle = dirHandle;
+      // 保存文件夹名称到 localStorage
+      localStorage.setItem(DOCS_FOLDER_KEY, dirHandle.name);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('保存文档库位置失败:', error);
+    return false;
+  }
+}
+
+// 获取保存的文件夹句柄
+function getDocsFolder() {
+  return window._docsFolderHandle;
+}
+
+// 加载默认欢迎页面
+async function loadWelcomePage() {
+  try {
+    const response = await fetch('/assets/docs/welcome.md');
+    if (response.ok) {
+      const content = await response.text();
+      loadMarkdown(content);
+    } else {
+      throw new Error('Failed to load welcome page');
+    }
+  } catch (error) {
+    console.error('加载欢迎页面失败:', error);
+    showError('加载欢迎页面失败');
+  }
+}
+
+// 选择文档库位置
+async function selectDocsFolder() {
+  try {
+    // 使用 showDirectoryPicker API 让用户选择文件夹
+    const dirHandle = await window.showDirectoryPicker({
+      mode: 'read',
+      startIn: 'documents'
+    });
+    
+    // 保存文件夹句柄
+    const saved = await saveDocsFolder(dirHandle);
+    if (saved) {
+      // 显示成功提示
+      showSuccess('文档库位置已更新');
+      // 重新加载文件树
+      await loadMarkdownFiles();
+    } else {
+      showError('保存文档库位置失败，请重试');
+    }
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      // 用户取消了选择，不需要显示错误
+      return;
+    }
+    console.error('选择文档库位置失败:', error);
+    showError('选择文档库位置失败，请重试');
+  }
+}
+
+// 修改 loadMarkdownFiles 函数，使用保存的文档库路径
+async function loadMarkdownFiles() {
+  const dirHandle = getDocsFolder();
+  if (!dirHandle) {
+    // 如果没有选择文档库，静默返回，不显示错误
+    return;
+  }
+  
+  try {
+    // 清空文件树
+    const fileTree = document.getElementById('fileTree');
+    fileTree.innerHTML = '';
+    
+    // 递归读取文件夹内容
+    await readDirectory(dirHandle, fileTree);
+  } catch (error) {
+    console.error('加载文件失败:', error);
+    showError('加载文件失败，请重试');
+  }
+}
+
+// 递归读取目录内容
+async function readDirectory(dirHandle, parentElement) {
+  try {
+    const ul = document.createElement('ul');
+    parentElement.appendChild(ul);
+
+    // 获取所有条目并排序
+    const entries = [];
+    for await (const entry of dirHandle.values()) {
+      entries.push(entry);
+    }
+    
+    // 先按类型排序（文件夹在前），再按名称排序
+    entries.sort((a, b) => {
+      if (a.kind !== b.kind) {
+        return a.kind === 'directory' ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    for (const entry of entries) {
+      const li = document.createElement('li');
+      
+      if (entry.kind === 'file' && entry.name.endsWith('.md')) {
+        // 文件节点
+        const span = document.createElement('span');
+        span.innerHTML = '<img src="/assets/ui/icons/nav/markdown.svg" class="tree-icon" alt="markdown">' + entry.name;
+        span.style.cursor = 'pointer';
+        span.onclick = async () => {
+          try {
+            const file = await entry.getFile();
+            const content = await file.text();
+            loadMarkdown(content);
+          } catch (error) {
+            console.error('读取文件失败:', error);
+            showError('读取文件失败，请重试');
+          }
+        };
+        li.appendChild(span);
+      } else if (entry.kind === 'directory') {
+        // 文件夹节点
+        const span = document.createElement('span');
+        span.innerHTML = '<img src="/assets/ui/icons/nav/folder-arrow.svg" class="tree-icon" alt="folder">' + entry.name;
+        span.style.cursor = 'pointer';
+        
+        // 创建子目录的容器
+        const subUl = document.createElement('ul');
+        subUl.style.display = 'none';
+        
+        // 标记是否已加载子目录
+        let isLoaded = false;
+        
+        // 点击文件夹时展开/折叠
+        span.onclick = async (event) => {
+          event.stopPropagation();
+          
+          const isHidden = subUl.style.display === 'none';
+          
+          // 如果是展开操作且未加载过子目录
+          if (isHidden && !isLoaded) {
+            try {
+              const subDirHandle = await dirHandle.getDirectoryHandle(entry.name);
+              // 加载子目录内容到 subUl
+              await readDirectory(subDirHandle, subUl);
+              isLoaded = true;
+            } catch (error) {
+              console.error('读取子目录失败:', error);
+              showError('读取子目录失败，请重试');
+              return;
+            }
+          }
+          
+          // 切换显示状态
+          if (isHidden) {
+            subUl.style.display = 'block';
+            const icon = span.querySelector('.tree-icon');
+            if (icon) {
+              icon.style.transform = 'rotate(90deg)';
+            }
+          } else {
+            subUl.style.display = 'none';
+            const icon = span.querySelector('.tree-icon');
+            if (icon) {
+              icon.style.transform = 'rotate(0deg)';
+            }
+          }
+        };
+        
+        li.appendChild(span);
+        li.appendChild(subUl);
+      }
+      
+      ul.appendChild(li);
+    }
+  } catch (error) {
+    console.error('读取目录失败:', error);
+    showError('读取目录失败，请重试');
+  }
+}
+
 // 初始化事件监听器
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // 侧边栏切换按钮
   const toggleSidebarBtn = document.querySelector('.toggle-sidebar-btn');
   const sidebar = document.getElementById('sidebar');
@@ -274,7 +427,66 @@ document.addEventListener('DOMContentLoaded', () => {
       location.reload();
     });
   }
+
+  // 选择文档库位置按钮（菜单中的）
+  const selectDocsFolderBtn = document.getElementById('select-docs-folder');
+  if (selectDocsFolderBtn) {
+    selectDocsFolderBtn.addEventListener('click', selectDocsFolder);
+  }
+
+  // 选择文档库位置按钮（引导按钮）
+  const selectDocsFolderGuideBtn = document.getElementById('select-docs-folder-btn');
+  if (selectDocsFolderGuideBtn) {
+    selectDocsFolderGuideBtn.addEventListener('click', () => {
+      console.log('选择本地文档库按钮被点击');
+      selectDocsFolder();
+    });
+  }
+  
+  // 检查是否有保存的文档库位置
+  const savedFolderName = localStorage.getItem(DOCS_FOLDER_KEY);
+  if (savedFolderName) {
+    try {
+      // 尝试恢复上次的文档库位置
+      const dirHandle = await window.showDirectoryPicker({
+        mode: 'read',
+        startIn: 'documents'
+      });
+      
+      if (dirHandle.name === savedFolderName) {
+        window._docsFolderHandle = dirHandle;
+        await loadMarkdownFiles();
+        // 隐藏引导按钮
+        const noDocsFolder = document.getElementById('no-docs-folder');
+        if (noDocsFolder) {
+          noDocsFolder.style.display = 'none';
+        }
+      } else {
+        // 如果用户选择了不同的文件夹，显示引导按钮
+        const noDocsFolder = document.getElementById('no-docs-folder');
+        if (noDocsFolder) {
+          noDocsFolder.style.display = 'flex';
+        }
+        await loadWelcomePage();
+      }
+    } catch (error) {
+      // 静默处理错误，不显示错误提示
+      console.error('恢复文档库位置失败:', error);
+      // 显示引导按钮
+      const noDocsFolder = document.getElementById('no-docs-folder');
+      if (noDocsFolder) {
+        noDocsFolder.style.display = 'flex';
+      }
+      await loadWelcomePage();
+    }
+  } else {
+    // 如果没有保存的位置，直接显示欢迎页面
+    const noDocsFolder = document.getElementById('no-docs-folder');
+    if (noDocsFolder) {
+      noDocsFolder.style.display = 'flex';
+    }
+    await loadWelcomePage();
+  }
 });
 
 // 初始化
-renderFileTree();
