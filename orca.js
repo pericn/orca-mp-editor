@@ -213,9 +213,6 @@ function createLoadingElement() {
   return loading;
 }
 
-// 文档库路径存储键名
-const DOCS_FOLDER_KEY = 'orca_docs_folder';
-
 // 保存文件夹句柄
 async function saveDocsFolder(dirHandle) {
   try {
@@ -224,8 +221,6 @@ async function saveDocsFolder(dirHandle) {
     if (permissionStatus === 'granted') {
       // 保存文件夹句柄
       window._docsFolderHandle = dirHandle;
-      // 保存文件夹名称到 localStorage
-      localStorage.setItem(DOCS_FOLDER_KEY, dirHandle.name);
       return true;
     }
     return false;
@@ -235,49 +230,101 @@ async function saveDocsFolder(dirHandle) {
   }
 }
 
-// 获取保存的文件夹句柄
-function getDocsFolder() {
-  return window._docsFolderHandle;
+// 检查是否有保存的文档库位置
+async function checkAndRestoreDocsFolder() {
+  try {
+    // 显示加载提示
+    showLoading('正在加载文档库...');
+
+    // 检查是否有保存的文件夹句柄
+    const dirHandle = window._docsFolderHandle;
+    if (dirHandle) {
+      try {
+        // 验证权限
+        const permissionStatus = await dirHandle.verifyPermission({ mode: 'read' });
+        if (permissionStatus === 'granted') {
+          await loadMarkdownFiles();
+          hideWelcomePage();
+          showSuccess('文档库已加载');
+          return;
+        }
+      } catch (error) {
+        console.log('验证权限时出错:', error);
+      }
+    }
+
+    // 如果没有有效的句柄，显示欢迎页面
+    showWelcomePage();
+  } catch (error) {
+    console.error('加载文档库失败:', error);
+    showError('加载文档库失败，请重新选择');
+    showWelcomePage();
+  } finally {
+    hideLoading();
+  }
 }
 
-// 加载默认欢迎页面
-async function loadWelcomePage() {
+// 处理有效的目录句柄
+async function handleValidDirectory(dirHandle) {
   try {
-    const response = await fetch('/assets/docs/welcome.md');
-    if (response.ok) {
-      const content = await response.text();
-      loadMarkdown(content);
+    // 验证权限
+    const permissionStatus = await dirHandle.verifyPermission({ mode: 'read' });
+    if (permissionStatus === 'granted') {
+      window._docsFolderHandle = dirHandle;
+      await loadMarkdownFiles();
+      hideWelcomePage();
+      showSuccess('文档库已加载');
     } else {
-      throw new Error('Failed to load welcome page');
+      throw new Error('没有足够的权限访问文档库');
     }
   } catch (error) {
-    console.error('加载欢迎页面失败:', error);
-    showError('加载欢迎页面失败');
+    console.error('验证目录权限失败:', error);
+    showError('无法访问文档库，请重新选择');
+    showWelcomePage();
   }
+}
+
+// 清除文档库缓存
+function clearDocsFolderCache() {
+  window._docsFolderHandle = null;
+}
+
+// 显示欢迎页面
+function showWelcomePage() {
+  const noDocsFolder = document.getElementById('no-docs-folder');
+  if (noDocsFolder) {
+    noDocsFolder.style.display = 'flex';
+  }
+  loadWelcomePage();
 }
 
 // 选择文档库位置
 async function selectDocsFolder() {
   try {
+    console.log('开始选择文档库位置');
     // 使用 showDirectoryPicker API 让用户选择文件夹
     const dirHandle = await window.showDirectoryPicker({
       mode: 'read',
       startIn: 'documents'
     });
     
+    console.log('用户选择的文件夹:', dirHandle.name);
+
     // 保存文件夹句柄
     const saved = await saveDocsFolder(dirHandle);
     if (saved) {
       // 显示成功提示
-      showSuccess('文档库位置已更新');
+      showSuccess('文档库已加载');
       // 重新加载文件树
       await loadMarkdownFiles();
+      hideWelcomePage();
     } else {
-      showError('保存文档库位置失败，请重试');
+      showError('无法访问文档库，请重试');
     }
   } catch (error) {
     if (error.name === 'AbortError') {
       // 用户取消了选择，不需要显示错误
+      console.log('用户取消了选择');
       return;
     }
     console.error('选择文档库位置失败:', error);
@@ -307,32 +354,70 @@ async function loadMarkdownFiles() {
 }
 
 // 递归读取目录内容
-async function readDirectory(dirHandle, parentElement) {
+async function readDirectory(dirHandle, parentElement, isRoot = true) {
   try {
+    console.log('读取目录:', {
+      name: dirHandle.name,
+      isRoot,
+      path: await getDirectoryPath(dirHandle)
+    });
+
     const ul = document.createElement('ul');
     parentElement.appendChild(ul);
 
     // 获取所有条目并排序
     const entries = [];
     for await (const entry of dirHandle.values()) {
+      // 处理文件名中的前导空格
+      const displayName = entry.name.trim();
+      const isHidden = displayName.startsWith('.');
+      
+      console.log('发现条目:', {
+        originalName: entry.name,
+        displayName: displayName,
+        kind: entry.kind,
+        isHidden: isHidden,
+        path: await getEntryPath(entry)
+      });
+      
+      // 只跳过隐藏文件，显示所有文件夹
+      if (entry.kind === 'file' && isHidden) {
+        console.log('跳过隐藏文件:', entry.name);
+        continue;
+      }
       entries.push(entry);
     }
     
-    // 先按类型排序（文件夹在前），再按名称排序
+    console.log('处理后的条目列表:', entries.map(e => ({
+      originalName: e.name,
+      displayName: e.name.trim(),
+      kind: e.kind
+    })));
+    
+    // 先按类型排序（文件夹在前），再按名称排序（忽略前导空格）
     entries.sort((a, b) => {
       if (a.kind !== b.kind) {
         return a.kind === 'directory' ? -1 : 1;
       }
-      return a.name.localeCompare(b.name);
+      return a.name.trim().localeCompare(b.name.trim());
     });
+
+    // 如果是根目录且只有一个文件夹，直接显示其内容
+    if (isRoot && entries.length === 1 && entries[0].kind === 'directory') {
+      console.log('根目录只有一个文件夹，直接显示其内容:', entries[0].name.trim());
+      const subDirHandle = await dirHandle.getDirectoryHandle(entries[0].name);
+      await readDirectory(subDirHandle, parentElement, false);
+      return;
+    }
 
     for (const entry of entries) {
       const li = document.createElement('li');
+      const displayName = entry.name.trim();
       
       if (entry.kind === 'file' && entry.name.endsWith('.md')) {
         // 文件节点
         const span = document.createElement('span');
-        span.innerHTML = '<img src="/assets/ui/icons/nav/markdown.svg" class="tree-icon" alt="markdown">' + entry.name;
+        span.innerHTML = '<img src="/assets/ui/icons/nav/markdown.svg" class="tree-icon" alt="markdown">' + displayName;
         span.style.cursor = 'pointer';
         span.onclick = async () => {
           try {
@@ -348,15 +433,12 @@ async function readDirectory(dirHandle, parentElement) {
       } else if (entry.kind === 'directory') {
         // 文件夹节点
         const span = document.createElement('span');
-        span.innerHTML = '<img src="/assets/ui/icons/nav/folder-arrow.svg" class="tree-icon" alt="folder">' + entry.name;
+        span.innerHTML = '<img src="/assets/ui/icons/nav/folder-arrow.svg" class="tree-icon" alt="folder">' + displayName;
         span.style.cursor = 'pointer';
         
         // 创建子目录的容器
         const subUl = document.createElement('ul');
         subUl.style.display = 'none';
-        
-        // 标记是否已加载子目录
-        let isLoaded = false;
         
         // 点击文件夹时展开/折叠
         span.onclick = async (event) => {
@@ -364,26 +446,24 @@ async function readDirectory(dirHandle, parentElement) {
           
           const isHidden = subUl.style.display === 'none';
           
-          // 如果是展开操作且未加载过子目录
-          if (isHidden && !isLoaded) {
+          // 如果是展开操作
+          if (isHidden) {
             try {
-              const subDirHandle = await dirHandle.getDirectoryHandle(entry.name);
-              // 加载子目录内容到 subUl
-              await readDirectory(subDirHandle, subUl);
-              isLoaded = true;
+              // 如果子目录还没有加载过，则加载它
+              if (subUl.children.length === 0) {
+                console.log('加载子目录:', displayName);
+                const subDirHandle = await dirHandle.getDirectoryHandle(entry.name);
+                await readDirectory(subDirHandle, subUl, false);
+              }
+              subUl.style.display = 'block';
+              const icon = span.querySelector('.tree-icon');
+              if (icon) {
+                icon.style.transform = 'rotate(90deg)';
+              }
             } catch (error) {
               console.error('读取子目录失败:', error);
               showError('读取子目录失败，请重试');
               return;
-            }
-          }
-          
-          // 切换显示状态
-          if (isHidden) {
-            subUl.style.display = 'block';
-            const icon = span.querySelector('.tree-icon');
-            if (icon) {
-              icon.style.transform = 'rotate(90deg)';
             }
           } else {
             subUl.style.display = 'none';
@@ -403,6 +483,63 @@ async function readDirectory(dirHandle, parentElement) {
   } catch (error) {
     console.error('读取目录失败:', error);
     showError('读取目录失败，请重试');
+  }
+}
+
+// 获取目录的完整路径
+async function getDirectoryPath(dirHandle) {
+  try {
+    const path = [];
+    let current = dirHandle;
+    
+    while (current) {
+      path.unshift(current.name);
+      current = await current.getParent();
+    }
+    
+    return path.join('/');
+  } catch (error) {
+    return dirHandle.name;
+  }
+}
+
+// 获取条目的完整路径
+async function getEntryPath(entry) {
+  try {
+    const parent = await entry.getParent();
+    const parentPath = await getDirectoryPath(parent);
+    return `${parentPath}/${entry.name}`;
+  } catch (error) {
+    return entry.name;
+  }
+}
+
+// 获取保存的文件夹句柄
+function getDocsFolder() {
+  return window._docsFolderHandle;
+}
+
+// 加载默认欢迎页面
+async function loadWelcomePage() {
+  try {
+    const response = await fetch('/assets/docs/welcome.md');
+    if (response.ok) {
+      const content = await response.text();
+      loadMarkdown(content);
+    } else {
+      throw new Error('Failed to load welcome page');
+    }
+  } catch (error) {
+    console.error('加载欢迎页面失败:', error);
+    showError('加载欢迎页面失败');
+  }
+}
+
+// 隐藏欢迎页面
+function hideWelcomePage() {
+  const noDocsFolder = document.getElementById('no-docs-folder');
+  if (noDocsFolder) {
+    noDocsFolder.style.display = 'none';
   }
 }
 
@@ -437,56 +574,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 选择文档库位置按钮（引导按钮）
   const selectDocsFolderGuideBtn = document.getElementById('select-docs-folder-btn');
   if (selectDocsFolderGuideBtn) {
-    selectDocsFolderGuideBtn.addEventListener('click', () => {
-      console.log('选择本地文档库按钮被点击');
-      selectDocsFolder();
-    });
+    selectDocsFolderGuideBtn.addEventListener('click', selectDocsFolder);
   }
   
-  // 检查是否有保存的文档库位置
-  const savedFolderName = localStorage.getItem(DOCS_FOLDER_KEY);
-  if (savedFolderName) {
-    try {
-      // 尝试恢复上次的文档库位置
-      const dirHandle = await window.showDirectoryPicker({
-        mode: 'read',
-        startIn: 'documents'
-      });
-      
-      if (dirHandle.name === savedFolderName) {
-        window._docsFolderHandle = dirHandle;
-        await loadMarkdownFiles();
-        // 隐藏引导按钮
-        const noDocsFolder = document.getElementById('no-docs-folder');
-        if (noDocsFolder) {
-          noDocsFolder.style.display = 'none';
-        }
-      } else {
-        // 如果用户选择了不同的文件夹，显示引导按钮
-        const noDocsFolder = document.getElementById('no-docs-folder');
-        if (noDocsFolder) {
-          noDocsFolder.style.display = 'flex';
-        }
-        await loadWelcomePage();
-      }
-    } catch (error) {
-      // 静默处理错误，不显示错误提示
-      console.error('恢复文档库位置失败:', error);
-      // 显示引导按钮
-      const noDocsFolder = document.getElementById('no-docs-folder');
-      if (noDocsFolder) {
-        noDocsFolder.style.display = 'flex';
-      }
-      await loadWelcomePage();
-    }
-  } else {
-    // 如果没有保存的位置，直接显示欢迎页面
-    const noDocsFolder = document.getElementById('no-docs-folder');
-    if (noDocsFolder) {
-      noDocsFolder.style.display = 'flex';
-    }
-    await loadWelcomePage();
-  }
+  // 检查并恢复文档库
+  await checkAndRestoreDocsFolder();
 });
 
 // 初始化

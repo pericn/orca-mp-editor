@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
@@ -26,7 +26,7 @@
   <meta name="apple-mobile-web-app-title" content="长条儿鲸" />
   <meta name="theme-color" content="#ffffff" />
 
-  <title>Orca Preview</title>
+  <title>Orca Editor v1.1.2</title>
   <link rel="stylesheet" href="/assets/css/function.css">
   <link rel="stylesheet" href="/assets/css/orca.css">
 </head>
@@ -50,8 +50,10 @@
       </div>
       <div id="fileTree">
         <!-- 只显示一个大按钮，居中 -->
-        <div class="no-docs-folder simple-center">
-          <button class="select-folder-btn" id="select-docs-folder-btn">选择本地文档库</button>
+        <div id="no-docs-folder" class="no-docs-folder simple-center">
+          <div class="button-container">
+            <button class="select-folder-btn" id="select-docs-folder-btn">选择本地文档库</button>
+          </div>
         </div>
       </div>
     </div>
