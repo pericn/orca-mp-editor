@@ -25,11 +25,17 @@ h3 {
   background-color: #ffffff;
   padding: 0.7rem 1rem 0.5rem;
   box-sizing: border-box;
-  overflow-x: auto; /* 启用水平滚动条 */
+  overflow-x: auto;
+  transition: transform 0.3s ease, width 0.3s ease;
+  transform: translateX(0);
+}
+
+#sidebar.hidden {
+  transform: translateX(-100%);
 }
 
 #fileTree {
-  cursor: pointer;
+
   font-size: 14px;
   color: #6d757d;
   list-style: none; /* 去掉默认的列表样式 */
@@ -37,6 +43,8 @@ h3 {
   padding: 0;
   white-space: nowrap; /* 禁止换行 */
 }
+
+
 
 #fileTree ul {
   margin: 0;
@@ -51,11 +59,14 @@ h3 {
 }
 
 #fileTree span {
-  display: inline-block;
+  display: flex;
+  align-items: center;
   cursor: pointer;
-  white-space: nowrap; /* 禁止换行 */
-  max-width: 90%; /* 设置最大宽度，防止超出容器 */
-  vertical-align: middle; /* 垂直居中 */
+  white-space: nowrap;
+  max-width: 90%;
+  padding: 4px 8px;
+  margin: 2px 0;
+  transition: background-color 0.2s;
 }
 
 
@@ -149,11 +160,16 @@ h3 {
 }
 
 #content {
-  flex: 1; /* 让右侧内容区域占据剩余空间 */
+  flex: 1;
   padding: 1rem;
-  margin-left: 20%; /* 确保右侧内容区域不会覆盖左侧目录树 */
-  position: relative; /* 确保 wx-header 的绝对定位基于 #content */
+  margin-left: 20%;
+  position: relative;
   box-sizing: border-box;
+  transition: margin-left 0.3s ease;
+}
+
+#content.expanded {
+  margin-left: 0;
 }
 
 .article-container {
@@ -212,4 +228,208 @@ h3 {
 
 .article-footer a:hover {
     text-decoration: underline;
+}
+
+/* 加载指示器样式 */
+.loading-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  z-index: 2000;
+  display: none;
+}
+
+/* 错误消息样式 */
+.error-message {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #ff4444;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  z-index: 2000;
+  display: none;
+  animation: slideIn 0.3s ease-out;
+}
+
+/* 成功消息样式 */
+.success-message {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  z-index: 2000;
+  display: none;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* 文件树错误状态样式 */
+.error-node {
+  color: #ff4444;
+  font-style: italic;
+  padding: 4px 8px;
+}
+
+.error-placeholder {
+  padding: 10px;
+  background-color: #f8f8f8;
+  border: 1px dashed #ccc;
+  color: #666;
+  text-align: center;
+  margin: 5px 0;
+}
+
+.empty-folder {
+  color: #999;
+  font-style: italic;
+  padding: 4px 8px;
+}
+
+/* 图片加载失败占位符 */
+.error-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  background-color: #f8f8f8;
+  border: 1px dashed #ccc;
+  color: #666;
+  margin: 10px 0;
+}
+
+/* 加载动画 */
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.loading-indicator::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 消息提示改进 */
+.error-message,
+.success-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 80%;
+  word-break: break-word;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.error-message::before {
+  content: '❌';
+}
+
+.success-message::before {
+  content: '✅';
+}
+
+/* 文件树交互优化 */
+#fileTree span:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+/* 文件树图标样式 */
+.tree-icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  margin-right: 4px;
+  transition: transform 0.2s ease;
+}
+
+/* Toast 通知样式 */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  padding: 12px 20px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 9999;
+  min-width: 280px;
+  max-width: 400px;
+  font-size: 14px;
+  color: #333;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.toast.success .status-dot {
+  background-color: #4CAF50;
+}
+
+.toast.error .status-dot {
+  background-color: #f44336;
+}
+
+/* 移除旧的 toast 样式 */
+.success-message,
+.error-message {
+  display: none !important;
+}
+
+/* 确保 toast 在移动设备上也能正常显示 */
+@media (max-width: 768px) {
+  .toast {
+    left: 10px;
+    right: 10px;
+    min-width: auto;
+    max-width: none;
+  }
 }

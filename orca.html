@@ -4,10 +4,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
+  <link rel="shortcut icon" href="/assets/icons/favicon.ico">
+
+  <!-- Apple Touch Icon -->
+  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+
+  <!-- Android Chrome Icons -->
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/assets/icons/android-chrome-512x512.png">
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="/assets/icons/site.webmanifest">
+
+
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="长条儿鲸" />
   <meta name="theme-color" content="#ffffff" />
+
   <title>Orca Preview</title>
   <link rel="stylesheet" href="function.css">
   <link rel="stylesheet" href="orca.css">
@@ -21,11 +39,10 @@
       <ul id="fileTree"></ul>
     </div>
 
-
     <div id="content">
       <!-- 微信标题栏 -->
       <div class="wx-header">
-        <div class="toggle-sidebar-btn" onclick="toggleSidebar()">☰</div>
+        <div class="toggle-sidebar-btn">☰</div>
         <div class="menu-wrapper">
           <div class="menu-btn"></div>
           <ul class="menu-dropdown">
@@ -35,26 +52,26 @@
           </ul>
         </div>
       </div>
+
+      <!-- 文章内容区域 -->
       <div class="article-container">
-        <!-- 平台固定内容 -->
         <header class="article-header">
           <h1>我们一起来做鲸鱼吧</h1>
           <p><a href="#">鲸P</a> <a href="#">长条儿鲸</a> <span>2025年5月12日 14:30</span></p>
         </header>
-        <!-- 用户创建内容 -->
         <main class="note-to-mp">
           <p>
           <figure><img src="https://cdn.jsdelivr.net/gh/pericn/Changtiaoer/MPic/Landscape%401x.png" alt=""></figure>
           </p>
           <p>你好，欢迎来到「长条儿鲸」。</p>
           <p>我想在这里共振你内在那个<strong>已经疲惫、但仍在寻找</strong>的自己。</p>
-          <p>这里不会有“正确做法”，也不会教你如何快速好起来。</p>
-          <p>但我希望能陪伴你提升一种“内在分辨率”——看清楚自己的感受、听懂自己的声音。</p>
+          <p>这里不会有"正确做法"，也不会教你如何快速好起来。</p>
+          <p>但我希望能陪伴你提升一种"内在分辨率"——看清楚自己的感受、听懂自己的声音。</p>
           <p><strong>不再被情绪推着跑，也不再压抑它</strong>。</p>
           <h2>我是谁</h2>
           <p>你好，我叫李帅。</p>
           <p>因为我热爱虎鲸，又因为微信名字用了很多年的 <code>Peric👾</code>
-            当做昵称，所以后面或许也会在这里使用“<strong>鲸P</strong>”这个名字。<code>(但其实是一个要扣钱的谐音梗)</code></p>
+            当做昵称，所以后面或许也会在这里使用"<strong>鲸P</strong>"这个名字。<code>(但其实是一个要扣钱的谐音梗)</code></p>
           <p>
           <figure><img src="https://cdn.jsdelivr.net/gh/pericn/Changtiaoer/MPic/tatoo.png"
               alt="我的纹身—一头不同角度看，正在浮窥//跃入水中的虎鲸">
@@ -73,20 +90,20 @@
           <p>两年 TWT 结束后的某天，我忽然觉得：我需要独立出来了，也需要停下来好好休息一下了。所以我停掉了所有手头的项目，<strong>从「学会休息」开始新的征程</strong>。</p>
           <p>之后的 406 天，我好像经历了一次漫长的生产，直到今天，我决定发出来这篇文章。</p>
           <p><strong>而写下这段文字的这个时刻，我觉得以前所有的经历，正串连在一起，共同编织了这个「当下」。</strong></p>
-          <h2>为什么叫“长条儿鲸”？</h2>
+          <h2>为什么叫"长条儿鲸"？</h2>
           <p>首先是鲸——我喜欢虎鲸，所以放进了账号的名字里。</p>
-          <p>这一切起源于那只“<strong>杀人鲸</strong>”。</p>
+          <p>这一切起源于那只"<strong>杀人鲸</strong>"。</p>
           <p>它的名字叫做<strong>提里库姆</strong><code>Tilikum</code>，在美国西北太平洋原住民契努克语中，寓意为<strong>朋友</strong>。</p>
           <p>截止到 2025 年，全世界范围没有任何野生虎鲸致人死亡的记录。而仅有的<strong>四起圈养虎鲸</strong>致人死亡记录中，<strong>三起</strong>来源于提里库姆。</p>
           <p>它 2
-            岁时就被人类捕捉、圈养，之后被迫展示训练娱乐表演长达33年。而野外虎鲸的寿命和人类寿命相仿，甚至远高于农业社会之前的人类寿命。但他的三次“犯罪记录”还是“成功”地让虎鲸这个族群坐实了“<strong>杀人</strong>”的称号。
+            岁时就被人类捕捉、圈养，之后被迫展示训练娱乐表演长达33年。而野外虎鲸的寿命和人类寿命相仿，甚至远高于农业社会之前的人类寿命。但他的三次"犯罪记录"还是"成功"地让虎鲸这个族群坐实了"<strong>杀人</strong>"的称号。
           </p>
           <blockquote>
             <p>实际上<strong>杀人鲸</strong>的说法来自英文 <strong>Killer Whale</strong> <code>杀手鲸</code> 的不不恰当翻译。在英文中 Killer Whale
               虽然也存在广泛误解，但是可以更轻松地找到源头说法是 Whale Killer <code>鲸鱼杀手</code> ——指虎鲸是海洋中的顶级捕食者，甚至很多大型鲸豚都在其捕猎范围内。</p>
           </blockquote>
           <p>
-            但实际上虎鲸不仅友好，在野外它们可以形成稳定的母系社会结构，用属于它们的语言沟通，然后共同狩猎，深潜、上游、浮窥、跳跃、捕猎、玩耍……有时候我甚至会觉得，<strong>它们像是一群“点错了进化点数”的人类，迷途在海洋</strong>。
+            但实际上虎鲸不仅友好，在野外它们可以形成稳定的母系社会结构，用属于它们的语言沟通，然后共同狩猎，深潜、上游、浮窥、跳跃、捕猎、玩耍……有时候我甚至会觉得，<strong>它们像是一群"点错了进化点数"的人类，迷途在海洋</strong>。
           </p>
           <p>
           <figure><img src="https://cdn.jsdelivr.net/gh/pericn/Changtiaoer/MPic/Avatar%401x.png" alt="浮窥中仰望星空">
@@ -94,11 +111,11 @@
           </figure>
           </p>
           <p>
-            所以，我最终选择了“虎鲸浮窥”这个形象作为这个账号的头像。而每一次虎鲸的浮窥，都要经历<strong>深潜、奋力上游</strong>，然后给出<strong>恰到好处</strong>的一跃，让自己脑袋能够在海面上停留几秒，看看“<strong>外面的世界</strong>”。我喜欢这样的意象，因为这里似乎带有许多
-            <strong>“修行”的隐喻</strong>。
+            所以，我最终选择了"虎鲸浮窥"这个形象作为这个账号的头像。而每一次虎鲸的浮窥，都要经历<strong>深潜、奋力上游</strong>，然后给出<strong>恰到好处</strong>的一跃，让自己脑袋能够在海面上停留几秒，看看"<strong>外面的世界</strong>"。我喜欢这样的意象，因为这里似乎带有许多
+            <strong>"修行"的隐喻</strong>。
           </p>
           <p>而「长条儿」姑且就算是增加一点趣味和可爱，让「修行」这条路多一点 <strong>playfulness</strong>。</p>
-          <p>说到底，“长条儿鲸”是一个听起来不太顺畅的名字，<strong>但我也喜欢它的不完美</strong>，就像我们的情绪和状态，也不总是整齐、顺畅、好理解。</p>
+          <p>说到底，"长条儿鲸"是一个听起来不太顺畅的名字，<strong>但我也喜欢它的不完美</strong>，就像我们的情绪和状态，也不总是整齐、顺畅、好理解。</p>
           <p>但这些东西，也值得<strong>被看见、被听见</strong>。</p>
           <h2>你会在这里看到什么？</h2>
           <p>一些写给正在「探索自己」的人的内容。</p>
@@ -112,12 +129,12 @@
               <p>在吵架之后，<br>
                 为什么又悄悄陷入自责；</p>
               <p>在面对情绪时，<br>
-                我们是否总是急着跳到“应该做点什么”；</p>
+                我们是否总是急着跳到"应该做点什么"。</p>
               <p>在看到一些社会事件时，<br>
                 那喷涌而出的情绪到底是什么……</p>
             </blockquote>
           </blockquote>
-          <p>而我分享这些，不是为了告诉你怎么“修好自己”，而是希望你能开始和自己好好相处。</p>
+          <p>而我分享这些，不是为了告诉你怎么"修好自己"，而是希望你能开始和自己好好相处。</p>
           <p>不是完美，而是真实地活。</p>
           <p>如果这些话能让你松一口气，那我们或许已经在共振了。</p>
         </main>
@@ -125,14 +142,14 @@
     </div>
   </div>
 
-
-
+  <!-- 加载必要的库 -->
   <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/markdown-it-mark/dist/markdown-it-mark.min.js"></script>
-  <script src="orca.js"></script>
 
-
+  <!-- 加载应用脚本 -->
   <script type="module">
+    import { copyContentToClipboardWithStyle, copyRawHtml } from './copyToWeChat.js';
+    import './orca.js';
 
     // 检测是否为微信浏览器
     const isWeChatBrowser = /MicroMessenger/i.test(navigator.userAgent);
@@ -155,25 +172,46 @@
       wxHeader.style.width = isHidden ? 'calc(100% - 20%)' : '100%';
     }
 
+    // 将 toggleSidebar 函数添加到全局作用域
+    window.toggleSidebar = toggleSidebar;
+
     document.addEventListener('DOMContentLoaded', () => {
       const sidebarBtn = document.querySelector('.toggle-sidebar-btn');
       sidebarBtn.addEventListener('click', toggleSidebar);
-    });
 
-    import { copyContentToClipboardWithStyle } from './orca.js';
-    
-    document.getElementById('copy-to-wechat').addEventListener('click', () => {
-      copyContentToClipboardWithStyle('.note-to-mp');
-    });
-    document.getElementById('show-clipboard-menu').addEventListener('click', () => {
-      copyContentToClipboardWithStyle('.note-to-mp');
-    });
-    document.getElementById('refresh-btn').addEventListener('click', () => {
-      location.reload();
-    });
+      // 复制到公众号按钮
+      const copyToWechatBtn = document.getElementById('copy-to-wechat');
+      if (copyToWechatBtn) {
+        copyToWechatBtn.addEventListener('click', async () => {
+          try {
+            await copyContentToClipboardWithStyle();
+          } catch (error) {
+            console.error('复制到公众号失败:', error);
+          }
+        });
+      }
 
+      // 复制 HTML 按钮
+      const copyHtmlBtn = document.getElementById('show-clipboard-menu');
+      if (copyHtmlBtn) {
+        copyHtmlBtn.addEventListener('click', async () => {
+          try {
+            await copyRawHtml();
+          } catch (error) {
+            console.error('复制 HTML 失败:', error);
+          }
+        });
+      }
+
+      // 刷新按钮
+      const refreshBtn = document.getElementById('refresh-btn');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+          location.reload();
+        });
+      }
+    });
   </script>
-
 </body>
 
 </html>
