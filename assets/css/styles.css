@@ -1,1 +1,67 @@
 @import "tailwindcss";
+
+/* 目录树样式统一优化（由 function.css 迁移） */
+#fileTree {
+  font-size: 15px;
+  color: #445564;
+  line-height: 1.7;
+  padding: 0;
+  margin: 0;
+}
+#fileTree ul {
+  margin: 0;
+  padding: 0 0 0 16px;
+}
+#fileTree li {
+  margin: 6px 0;
+  list-style: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+#fileTree span {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 95%;
+  padding: 4px 8px;
+  margin: 0;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  font-size: 15px;
+  color: #445564;
+  font-weight: 500;
+}
+#fileTree span:hover {
+  background-color: #f5f7fa;
+}
+.tree-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  flex-shrink: 0;
+  vertical-align: middle;
+  transition: transform 0.2s ease;
+}
+.empty-folder {
+  color: #bbb;
+  font-style: italic;
+  font-size: 14px;
+  padding: 4px 8px;
+}
+.error-node {
+  color: #ff4444;
+  font-style: italic;
+  font-size: 14px;
+  padding: 4px 8px;
+}
+.sidebar-btn::after {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: -8px;
+  right: -8px;
+  bottom: -8px;
+  z-index: 1;
+}
+

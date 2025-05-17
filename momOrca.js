@@ -5,28 +5,52 @@ const juice = require('juice');
 const postcss = require('postcss');
 const customProperties = require('postcss-custom-properties');
 const { JSDOM } = require('jsdom');
+const MarkdownIt = require('markdown-it');
+const markdownItMark = require('markdown-it-mark');
 
 const app = express();
 const PORT = 3730;
 
+// 初始化 markdown-it
+const md = new MarkdownIt();
+md.use(markdownItMark);
+
+// 自定义图片渲染规则
+md.renderer.rules.image = (tokens, idx) => {
+  const token = tokens[idx];
+  const src = token.attrGet('src');
+  const alt = token.content || '';
+  const figcaption = alt ? `<figcaption>${alt}</figcaption>` : '';
+  return `<figure><img src="${src}" alt="${alt}" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'24\\' height=\\'24\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23ccc\\' d=\\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.9 13.98l2.1 2.53 3.1-3.99c.2-.26.6-.26.8.01l3.51 4.68a.5.5 0 0 1-.4.8H6.02c-.42 0-.65-.48-.39-.81L8.12 14c.19-.26.57-.27.78-.02z\'/%3E%3C/svg%3E'">${figcaption}</figure>`;
+};
+
 // 静态资源服务
 app.use(express.static(__dirname));
 
-// 提供 Markdown 文件内容的 API（如有需要）
-app.get('/api/article', (req, res) => {
-  const filePath = req.query.path;
-  if (!filePath || !filePath.endsWith('.md')) {
-    return res.status(400).send('Invalid file path');
+const ROOT_CONFIG = path.join(__dirname, 'docs_root.json');
+function saveDocsRoot(rootPath) {
+  fs.writeFileSync(ROOT_CONFIG, JSON.stringify({ root: rootPath }), 'utf-8');
+}
+function getDocsRoot() {
+  if (fs.existsSync(ROOT_CONFIG)) {
+    return JSON.parse(fs.readFileSync(ROOT_CONFIG, 'utf-8')).root;
   }
-  try {
-    const content = fs.readFileSync(filePath, 'utf-8');
-    res.send(content);
-  } catch (error) {
-    res.status(404).send('File not found');
+  return null;
+}
+
+app.use(express.json());
+
+// 设置文档库根目录
+app.post('/api/set-root', (req, res) => {
+  const { rootPath } = req.body;
+  if (!rootPath || typeof rootPath !== 'string') {
+    return res.status(400).json({ error: 'Invalid rootPath' });
   }
+  saveDocsRoot(rootPath);
+  res.json({ success: true });
 });
 
-// 新增：处理样式内联的 API
+// 处理样式内联的 API
 app.post('/api/inline-styles', express.json(), async (req, res) => {
   try {
     const { html, css } = req.body;
@@ -66,7 +90,7 @@ app.post('/api/inline-styles', express.json(), async (req, res) => {
       // 查找带 background-image 的 span
       spans.forEach(span => {
         const style = span.getAttribute('style') || '';
-        const bgMatch = style.match(/background-image:\s*url\(["']?([^)"']+)["']?\)/i);
+        const bgMatch = style.match(/background-image:\s*url\(["']?([^)"]+)["']?\)/i);
         if (bgMatch) {
           // 提取原 style，去除所有 background 相关属性
           const newStyle = style
