@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orca Editor</title>
+  <link href="/assets/css/styles.css" rel="stylesheet">
+</head>
+<body class="bg-[#f8f8f8] text-gray-900 font-sans">
+  <!-- 顶部栏 -->
+  <header class="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-white">
+    <div class="flex items-center gap-2">
+      <img src="/assets/icons/favicon-32x32.png" alt="logo" class="w-6 h-6" />
+      <div class="text-lg font-medium tracking-wide">Orca!!!</div>
+    </div>
+    <div class="text-sm text-gray-500">by 鲸P</div>
+  </header>
+
+  <!-- 页面主体 -->
+  <div class="flex flex-col md:flex-row w-full h-[calc(100vh-60px)]">
+
+    <!-- 左侧边栏 -->
+    <aside class="hidden md:flex flex-col w-[220px] border-r border-gray-200 bg-white p-4 gap-6">
+      <div class="text-xs text-gray-400">草稿箱</div>
+      <div class="flex flex-col gap-2">
+        <button class="px-3 py-2 text-left text-sm bg-[#e6f0ff] text-[#073967] rounded-[10px] font-medium">新的文章</button>
+        <button class="px-3 py-2 text-left text-sm text-gray-700 rounded-[10px] hover:bg-gray-100">灵魂三问</button>
+      </div>
+    </aside>
+
+    <!-- 中心编辑区 -->
+    <main class="flex-1 flex flex-col p-6 overflow-auto">
+      <div class="flex flex-col gap-4 max-w-[720px] w-full mx-auto">
+        <input type="text" placeholder="起个标题吧..." class="w-full text-3xl font-semibold bg-transparent border-none focus:outline-none placeholder-gray-400 rounded-[10px]" />
+        <textarea placeholder="写点什么..." class="w-full min-h-[400px] resize-none text-base bg-transparent border-none focus:outline-none placeholder-gray-400 rounded-[10px]"></textarea>
+      </div>
+    </main>
+
+    <!-- 右侧文章栏（仅桌面显示） -->
+    <aside class="hidden lg:flex flex-col w-[260px] border-l border-gray-200 bg-white p-4 gap-4">
+      <div class="text-xs text-gray-400">已发布</div>
+      <div class="flex flex-col gap-2">
+        <div class="text-sm text-gray-700">情绪自由的前提</div>
+        <div class="text-sm text-gray-700">告别理性崇拜</div>
+      </div>
+    </aside>
+  </div>
+</body>
+</html>

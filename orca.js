@@ -543,42 +543,98 @@ function hideWelcomePage() {
   }
 }
 
-// 初始化事件监听器
-document.addEventListener('DOMContentLoaded', async () => {
-  // 侧边栏切换按钮
-  const toggleSidebarBtn = document.querySelector('.toggle-sidebar-btn');
+// Menu functionality
+document.addEventListener('DOMContentLoaded', () => {
+  // Toggle sidebar
+  const sidebarBtn = document.querySelector('.toggle-sidebar-btn');
   const sidebar = document.getElementById('sidebar');
   const content = document.getElementById('content');
   
-  if (toggleSidebarBtn && sidebar && content) {
-    toggleSidebarBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('hidden');
-      content.classList.toggle('expanded');
-    });
-  }
+  sidebarBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('hidden');
+    content.style.marginLeft = sidebar.classList.contains('hidden') ? '0' : '18rem';
+  });
 
-  // 刷新按钮
-  const refreshBtn = document.getElementById('refresh-btn');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => {
+  // Menu dropdowns
+  const menuButtons = document.querySelectorAll('button[class*="hover:bg-gray-100"]');
+  menuButtons.forEach(button => {
+    const dropdown = button.nextElementSibling;
+    if (dropdown && dropdown.classList.contains('menu-dropdown')) {
+      button.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('active');
+      });
+    }
+  });
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', (e) => {
+    const dropdowns = document.querySelectorAll('.menu-dropdown.active');
+    dropdowns.forEach(dropdown => {
+      if (!dropdown.contains(e.target) && !e.target.closest('button')) {
+        dropdown.classList.remove('active');
+      }
+    });
+  });
+
+  // Handle menu items
+  const menuItems = {
+    'select-docs-folder': () => {
+      // Implement folder selection logic
+      console.log('Select docs folder clicked');
+    },
+    'refresh-btn': () => {
       location.reload();
+    },
+    'copy-to-wechat': async () => {
+      try {
+        await copyContentToClipboardWithStyle();
+      } catch (error) {
+        console.error('复制到公众号失败:', error);
+      }
+    },
+    'show-clipboard-menu': async () => {
+      try {
+        await copyRawHtml();
+      } catch (error) {
+        console.error('复制 HTML 失败:', error);
+      }
+    }
+  };
+
+  // Add click handlers for menu items
+  Object.entries(menuItems).forEach(([id, handler]) => {
+    const elements = document.querySelectorAll(`#${id}`);
+    elements.forEach(element => {
+      element.addEventListener('click', handler);
+    });
+  });
+
+  // Handle folder selection button
+  const selectFolderBtn = document.getElementById('select-docs-folder-btn');
+  if (selectFolderBtn) {
+    selectFolderBtn.addEventListener('click', () => {
+      // Implement folder selection logic
+      console.log('Select folder button clicked');
     });
   }
 
-  // 选择文档库位置按钮（菜单中的）
-  const selectDocsFolderBtn = document.getElementById('select-docs-folder');
-  if (selectDocsFolderBtn) {
-    selectDocsFolderBtn.addEventListener('click', selectDocsFolder);
-  }
+  // Handle mobile view
+  const handleMobileView = () => {
+    if (window.innerWidth <= 768) {
+      sidebar.classList.add('hidden');
+      content.style.marginLeft = '0';
+    } else {
+      sidebar.classList.remove('hidden');
+      content.style.marginLeft = '18rem';
+    }
+  };
 
-  // 选择文档库位置按钮（引导按钮）
-  const selectDocsFolderGuideBtn = document.getElementById('select-docs-folder-btn');
-  if (selectDocsFolderGuideBtn) {
-    selectDocsFolderGuideBtn.addEventListener('click', selectDocsFolder);
-  }
-  
-  // 检查并恢复文档库
-  await checkAndRestoreDocsFolder();
+  // Initial mobile view check
+  handleMobileView();
+
+  // Listen for window resize
+  window.addEventListener('resize', handleMobileView);
 });
 
 // 初始化

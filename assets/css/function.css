@@ -4,7 +4,7 @@ body {
     color: #333;
     margin: 0;
     padding: 0;
-    background-color: #f3f3f3;
+    background-color: #fefdfb;
     position: sticky;
 }
 
@@ -46,6 +46,8 @@ h3 {
   margin: 0;
   padding: 0;
   white-space: nowrap; /* 禁止换行 */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
 }
 
 #fileTree ul {
@@ -143,6 +145,15 @@ h3 {
     margin: 0;
     min-width: 120px;
     white-space: nowrap;
+    z-index: 50;
+    transform-origin: top;
+    transition: all 0.2s ease-in-out;
+}
+
+.menu-dropdown.hidden {
+  opacity: 0;
+  transform: scale(0.95);
+  pointer-events: none;
 }
 
 .menu-dropdown li {
@@ -443,24 +454,69 @@ h3 {
   background: #fff;
 }
 
+.button-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+/* 选择文件夹按钮样式 */
 .select-folder-btn {
+    width: 247px;
+    height: 59px;
+    border-radius: 16px;
+    background: #34A5DD;
+    color: #fff;
+    border: 2px solid #B6DFFF;
+    font-size: 1.25rem;
+    font-weight: 700;
+    box-shadow:
+      inset 0 2px 8px 0 #ffffff80,
+      inset 0 -4px 12px 0 #1b6fae33,
+      0 2px 8px rgba(52,165,221,0.08);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
+    outline: none;
+    opacity: 1;
+}
+.select-folder-btn:hover, .select-folder-btn:focus {
+    background: #2593c6;
+    border-color: #7cc7f7;
+    box-shadow:
+      inset 0 4px 12px 0 #ffffffb3,
+      inset 0 -6px 16px 0 #1b6fae55,
+      0 4px 16px rgba(52,165,221,0.16);
+}
+
+.restore-folder-btn {
   width: 200px;
-  height: 56px;
-  border-radius: 16px;
-  background: #34A5DD;
-  color: #fff;
-  border: none;
-  font-size: 1.3rem;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(52,165,221,0.08);
+  height: 40px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  font-size: 14px;
+  color: #333;
   cursor: pointer;
-  transition: background 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s ease;
+  margin-top: 10px;
 }
-.select-folder-btn:hover {
-  background: #2d94c7;
+
+.restore-folder-btn:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+.restore-folder-btn .folder-name {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.5);
+  margin-left: 4px;
 }
 
 /* 移除所有无关引导内容样式 */
@@ -508,3 +564,124 @@ h3 {
 
 /* 移除 .welcome-guide 相关样式 */
 .welcome-guide, .wg-header, .wg-logo, .wg-title-group, .wg-title, .wg-subtitle, .wg-main, .wg-hint-text, .wg-orca-img, .wg-select-btn { display: none !important; }
+
+/* 基础样式 */
+:root {
+  --primary-color: #3B82F6;
+  --hover-color: #2563EB;
+  --text-color: #1F2937;
+  --border-color: #E5E7EB;
+  --bg-color: #F9FAFB;
+}
+
+/* 菜单按钮样式 */
+.menu-btn {
+  position: relative;
+  z-index: 10;
+}
+
+.menu-btn:hover {
+  background-color: var(--bg-color);
+}
+
+/* 下拉菜单样式 */
+.menu-dropdown {
+  z-index: 50;
+  transform-origin: top;
+  transition: all 0.2s ease-in-out;
+}
+
+.menu-dropdown.hidden {
+  opacity: 0;
+  transform: scale(0.95);
+  pointer-events: none;
+}
+
+.menu-item {
+  transition: background-color 0.2s ease;
+}
+
+.menu-item:hover {
+  background-color: var(--bg-color);
+}
+
+/* Toast 提示样式 */
+#toast {
+  z-index: 100;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 目录树样式 */
+#fileTree {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+#fileTree::-webkit-scrollbar {
+  width: 6px;
+}
+
+#fileTree::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#fileTree::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 3px;
+}
+
+/* 文章预览区样式 */
+.article-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .article-container {
+    padding: 1rem;
+  }
+}
+
+/* 暗色模式支持 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-color: #F9FAFB;
+    --border-color: #374151;
+    --bg-color: #1F2937;
+  }
+
+  body {
+    background-color: #111827;
+    color: var(--text-color);
+  }
+
+  .menu-dropdown {
+    background-color: #1F2937;
+    border-color: var(--border-color);
+  }
+
+  .menu-item {
+    color: var(--text-color);
+  }
+
+  .menu-item:hover {
+    background-color: #374151;
+  }
+
+  #toast {
+    background-color: #374151;
+  }
+}

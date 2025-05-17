@@ -67,21 +67,39 @@ export async function copyRawHtml() {
       throw new Error('未找到文章内容区域');
     }
 
-    // 获取完整的 HTML 内容
-    const htmlContent = main.outerHTML;
-    console.log('HTML content to copy:', htmlContent);
+    // 获取样式表内容
+    const styleSheets = Array.from(document.styleSheets)
+      .filter(sheet => sheet.href && sheet.href.includes('orca.css'))
+      .map(sheet => fetch(sheet.href).then(res => res.text()));
+    
+    const cssContent = await Promise.all(styleSheets);
+
+    // 调用后端 API 进行样式内联
+    const response = await fetch('/api/inline-styles', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        html: main.outerHTML,
+        css: cssContent.join('\n')
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('样式内联处理失败');
+    }
+
+    const { html: inlinedHtml } = await response.json();
 
     // 复制到剪贴板
     try {
-      // 使用 Clipboard API
-      await navigator.clipboard.writeText(htmlContent);
-      console.log('HTML copied successfully using Clipboard API');
+      await navigator.clipboard.writeText(inlinedHtml);
       showSuccess('HTML 代码已复制到剪贴板！');
     } catch (err) {
-      console.log('Clipboard API failed, using fallback method');
       // 如果 clipboard API 不可用，使用传统方法
       const textarea = document.createElement('textarea');
-      textarea.value = htmlContent;
+      textarea.value = inlinedHtml;
       textarea.style.position = 'fixed';  // 防止页面滚动
       textarea.style.opacity = '0';       // 隐藏元素
       document.body.appendChild(textarea);
@@ -91,7 +109,6 @@ export async function copyRawHtml() {
       document.body.removeChild(textarea);
       
       if (successful) {
-        console.log('HTML copied successfully using fallback method');
         showSuccess('HTML 代码已复制到剪贴板！（使用备用方法）');
       } else {
         throw new Error('复制失败');
