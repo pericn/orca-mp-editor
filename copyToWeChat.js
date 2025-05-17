@@ -50,7 +50,7 @@ export async function copyContentToClipboardWithStyle() {
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      showSuccess('内容已复制到剪贴板！（使用备用方法）');
+      showSuccess('内容已复制到剪贴板，可以粘贴到公众号编辑器中！');
     }
   } catch (error) {
     console.error('复制内容时出错:', error);

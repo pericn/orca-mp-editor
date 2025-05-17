@@ -91,14 +91,14 @@ function createTreeNode(node) {
 }
 
 // 加载 Markdown 文件并渲染（前端渲染版）
-async function loadMarkdown(content) {
+async function loadMarkdown(content, filename = '') {
   try {
     showLoading('正在加载文档...');
     // 移除 YAML front matter
     const cleanContent = content.replace(/^---[\s\S]*?---/, '').trim();
     // 提取标题
     const titleMatch = cleanContent.match(/^#\s+(.*)$/m);
-    const title = titleMatch ? titleMatch[1].trim() : '未命名文档';
+    let title = titleMatch ? titleMatch[1].trim() : '';
     // 移除标题
     const contentWithoutTitle = titleMatch
       ? cleanContent.replace(/^#\s+.*$/m, '').trim()
@@ -110,6 +110,13 @@ async function loadMarkdown(content) {
       const processedContent = content.replace(/&lt;br&gt;/g, '<br>');
       return `<h2${attrs}>${processedContent}</h2>`;
     });
+    // 如果没有 h1，用文件名（去掉 .md）作为标题
+    if (!title && filename) {
+      title = filename.replace(/\.md$/, '');
+    }
+    if (!title) {
+      title = '未命名文档';
+    }
     // 更新标题
     const titleElement = document.querySelector('.article-header h1');
     if (titleElement) {
@@ -223,50 +230,71 @@ export function hideLoading() {
   }
 }
 
-export function showError(message) {
-  const toast = document.createElement('div');
-  toast.className = 'toast error';
-  toast.innerHTML = `
-    <div class="status-dot"></div>
-    <div class="message">${message}</div>
-  `;
-  document.body.appendChild(toast);
+// Toast 队列管理
+let toastQueue = [];
+let isShowingToast = false;
+let lastToastMessage = '';
+let lastToastTime = 0;
 
+function showNextToast() {
+  if (toastQueue.length === 0 || isShowingToast) {
+    return;
+  }
+
+  isShowingToast = true;
+  const { message, type } = toastQueue.shift();
+  const toast = document.createElement('div');
+  
+  // 根据类型设置样式
+  const bgColor = 'bg-[#FBF3E0]';
+  const textColor = 'text-[#445564]';
+  const fontStyle = 'font-extrabold text-[16px] leading-[1.2] tracking-[-0.05em]';
+  const dotColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+  const dot = `<span class="inline-block w-[5px] h-[5px] rounded-full mr-2 ${dotColor}"></span>`;
+
+  toast.className = `fixed top-16 right-4 ${bgColor} ${textColor} ${fontStyle} px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 transform -translate-y-full opacity-0 transition-all duration-200 ease-in-out z-50`;
+  toast.innerHTML = `${dot}<span>${message}</span>`;
+  
+  document.body.appendChild(toast);
   requestAnimationFrame(() => {
-    toast.classList.add('show');
+    toast.style.transform = 'translateY(0)';
+    toast.style.opacity = '1';
   });
 
   setTimeout(() => {
-    toast.classList.remove('show');
+    toast.style.transform = 'translateY(-100%)';
+    toast.style.opacity = '0';
     setTimeout(() => {
-      if (toast.parentNode) {
-        document.body.removeChild(toast);
-      }
-    }, 300);
+      document.body.removeChild(toast);
+      isShowingToast = false;
+      showNextToast();
+    }, 200);
   }, 3000);
 }
 
+function shouldShowToast(message) {
+  const now = Date.now();
+  // 如果消息相同且时间间隔小于 1 秒，则不显示
+  if (message === lastToastMessage && now - lastToastTime < 1000) {
+    return false;
+  }
+  lastToastMessage = message;
+  lastToastTime = now;
+  return true;
+}
+
+export function showError(message) {
+  if (shouldShowToast(message)) {
+    toastQueue.push({ message, type: 'error' });
+    showNextToast();
+  }
+}
+
 export function showSuccess(message) {
-  const toast = document.createElement('div');
-  toast.className = 'toast success';
-  toast.innerHTML = `
-    <div class="status-dot"></div>
-    <div class="message">${message}</div>
-  `;
-  document.body.appendChild(toast);
-
-  requestAnimationFrame(() => {
-    toast.classList.add('show');
-  });
-
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => {
-      if (toast.parentNode) {
-        document.body.removeChild(toast);
-      }
-    }, 300);
-  }, 3000);
+  if (shouldShowToast(message)) {
+    toastQueue.push({ message, type: 'success' });
+    showNextToast();
+  }
 }
 
 function createLoadingElement() {
@@ -400,19 +428,26 @@ async function selectDocsFolder() {
 async function loadMarkdownFiles() {
   const dirHandle = getDocsFolder();
   if (!dirHandle) {
-    // 如果没有选择文档库，静默返回，不显示错误
     return;
   }
 
   try {
-    // 清空文件树
     const fileTree = document.getElementById('fileTree');
     fileTree.innerHTML = '';
 
-    // 递归读取文件夹内容
-    await readDirectory(dirHandle, fileTree);
+    // 添加当前文件夹名称（固定在顶部）
+    const folderName = document.createElement('div');
+    folderName.className = 'text-[22px] font-black leading-[120%] tracking-[-0.05em] text-[#445564] mb-4 pl-4';
+    folderName.textContent = dirHandle.name;
+    fileTree.appendChild(folderName);
 
-    // 加载成功后隐藏选择文件夹按钮和提示
+    // 创建文件树容器（可滚动区域）
+    const treeContainer = document.createElement('div');
+    treeContainer.className = 'overflow-y-auto max-h-[calc(100vh-180px)]';
+    fileTree.appendChild(treeContainer);
+
+    await readDirectory(dirHandle, treeContainer);
+
     const selectBtn = document.getElementById('select-docs-folder-btn');
     if (selectBtn) selectBtn.style.display = 'none';
     const hint = document.querySelector('#sidebar-content > div');
@@ -426,46 +461,37 @@ async function loadMarkdownFiles() {
 // 递归读取目录内容
 async function readDirectory(dirHandle, parentElement, relativePath = '') {
   try {
-    console.log('读取目录:', {
-      name: dirHandle.name,
-      isRoot: relativePath === '',
-      path: await getDirectoryPath(dirHandle)
-    });
-
     const ul = document.createElement('ul');
+    ul.className = 'list-none p-0 m-0';
     parentElement.appendChild(ul);
 
-    // 获取所有条目并排序
     const entries = [];
     for await (const entry of dirHandle.values()) {
-      // 处理文件名中的前导空格
       const displayName = entry.name.trim();
       const isHidden = displayName.startsWith('.');
-      const entryRelativePath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
-
-      console.log('发现条目:', {
-        originalName: entry.name,
-        displayName: displayName,
-        kind: entry.kind,
-        isHidden: isHidden,
-        path: await getEntryPath(entry)
-      });
-
-      // 只跳过隐藏文件，显示所有文件夹
-      if (entry.kind === 'file' && isHidden) {
-        console.log('跳过隐藏文件:', entry.name);
+      
+      // 跳过隐藏文件和空文件夹
+      if (isHidden) {
         continue;
       }
+
+      // 如果是文件夹，检查是否为空或是否包含 md 文件
+      if (entry.kind === 'directory') {
+        let hasMdFile = false;
+        for await (const subEntry of entry.values()) {
+          if (subEntry.kind === 'file' && subEntry.name.endsWith('.md') && !subEntry.name.includes('{{')) {
+            hasMdFile = true;
+            break;
+          }
+        }
+        if (!hasMdFile) {
+          continue;
+        }
+      }
+
       entries.push(entry);
     }
 
-    console.log('处理后的条目列表:', entries.map(e => ({
-      originalName: e.name,
-      displayName: e.name.trim(),
-      kind: e.kind
-    })));
-
-    // 先按类型排序（文件夹在前），再按名称排序（忽略前导空格）
     entries.sort((a, b) => {
       if (a.kind !== b.kind) {
         return a.kind === 'directory' ? -1 : 1;
@@ -473,9 +499,7 @@ async function readDirectory(dirHandle, parentElement, relativePath = '') {
       return a.name.trim().localeCompare(b.name.trim());
     });
 
-    // 如果是根目录且只有一个文件夹，直接显示其内容
     if (relativePath === '' && entries.length === 1 && entries[0].kind === 'directory') {
-      console.log('根目录只有一个文件夹，直接显示其内容:', entries[0].name.trim());
       const subDirHandle = await dirHandle.getDirectoryHandle(entries[0].name);
       await readDirectory(subDirHandle, parentElement, entries[0].name);
       return;
@@ -483,19 +507,23 @@ async function readDirectory(dirHandle, parentElement, relativePath = '') {
 
     for (const entry of entries) {
       const li = document.createElement('li');
+      li.className = 'my-1';
       const displayName = entry.name.trim();
 
-      // 只显示真实存在的 Markdown 文件，过滤掉模板文件（如 {{YYMMDD}}.md）
       if (entry.kind === 'file' && entry.name.endsWith('.md') && !entry.name.includes('{{')) {
-        // 文件节点
         const span = document.createElement('span');
-        span.innerHTML = '<img src="/assets/ui/icons/nav/markdown.svg" class="tree-icon" alt="markdown">' + displayName;
-        span.style.cursor = 'pointer';
+        span.className = 'flex items-center text-sm font-bold text-[#445564] py-1 cursor-pointer hover:bg-[#f5f7fa]';
+        // 移除 .md 后缀
+        const displayNameWithoutExt = displayName.replace(/\.md$/, '');
+        span.innerHTML = `
+          <img src="/assets/ui/icons/nav/folder-arrow.svg" class="w-[3px] h-auto mr-2 flex-shrink-0" alt="markdown">
+          <span>${displayNameWithoutExt}</span>
+        `;
         span.onclick = async () => {
           try {
             const file = await entry.getFile();
             const content = await file.text();
-            loadMarkdown(content); // 直接传内容
+            loadMarkdown(content, displayName);
           } catch (error) {
             console.error('读取文件失败:', error);
             showError('读取文件失败，请重试');
@@ -504,32 +532,29 @@ async function readDirectory(dirHandle, parentElement, relativePath = '') {
         li.appendChild(span);
         ul.appendChild(li);
       } else if (entry.kind === 'directory') {
-        // 文件夹节点
         const span = document.createElement('span');
-        span.innerHTML = '<img src="/assets/ui/icons/nav/folder-arrow.svg" class="tree-icon" alt="folder">' + displayName;
-        span.style.cursor = 'pointer';
+        span.className = 'flex items-center text-sm font-bold text-[#445564] py-1 cursor-pointer hover:bg-[#f5f7fa]';
+        span.innerHTML = `
+          <img src="/assets/ui/icons/nav/folder-arrow.svg" class="w-[10px] h-auto mr-2 flex-shrink-0 transition-transform duration-200" alt="folder">
+          <span>${displayName}</span>
+        `;
 
-        // 创建子目录的容器
         const subUl = document.createElement('ul');
-        subUl.style.display = 'none';
+        subUl.className = 'list-none p-0 m-0 ml-3 hidden';
 
-        // 点击文件夹时展开/折叠
         span.onclick = async (event) => {
           event.stopPropagation();
+          const isHidden = subUl.classList.contains('hidden');
 
-          const isHidden = subUl.style.display === 'none';
-
-          // 如果是展开操作
           if (isHidden) {
             try {
-              // 如果子目录还没有加载过，则加载它
               if (subUl.children.length === 0) {
-                console.log('加载子目录:', displayName);
                 const subDirHandle = await dirHandle.getDirectoryHandle(entry.name);
-                await readDirectory(subDirHandle, subUl, entryRelativePath);
+                const newRelativePath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+                await readDirectory(subDirHandle, subUl, newRelativePath);
               }
-              subUl.style.display = 'block';
-              const icon = span.querySelector('.tree-icon');
+              subUl.classList.remove('hidden');
+              const icon = span.querySelector('img');
               if (icon) {
                 icon.style.transform = 'rotate(90deg)';
               }
@@ -539,8 +564,8 @@ async function readDirectory(dirHandle, parentElement, relativePath = '') {
               return;
             }
           } else {
-            subUl.style.display = 'none';
-            const icon = span.querySelector('.tree-icon');
+            subUl.classList.add('hidden');
+            const icon = span.querySelector('img');
             if (icon) {
               icon.style.transform = 'rotate(0deg)';
             }
@@ -631,7 +656,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('copy-to-wechat-btn').onclick = async () => {
     try {
       await copyContentToClipboardWithStyle();
-      showSuccess('已复制到公众号样式');
     } catch (e) {
       showError('复制失败');
     }
@@ -697,4 +721,5 @@ document.addEventListener('DOMContentLoaded', () => {
   checkAndRestoreDocsFolder();
 });
 
+// 初始化
 // 初始化

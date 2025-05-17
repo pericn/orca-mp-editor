@@ -2,66 +2,55 @@
 
 /* 目录树样式统一优化（由 function.css 迁移） */
 #fileTree {
-  font-size: 15px;
-  color: #445564;
-  line-height: 1.7;
-  padding: 0;
-  margin: 0;
+  @apply w-[calc(100%-32px)] mx-4 mb-[50px] absolute top-[100px] left-0;
 }
+
+.current-folder-name {
+  @apply text-[22px] font-black leading-[120%] tracking-[-0.05em] text-[#445564] mb-4 pl-4;
+}
+
+.tree-container {
+  @apply overflow-y-auto max-h-[calc(100vh-180px)];
+}
+
 #fileTree ul {
-  margin: 0;
-  padding: 0 0 0 16px;
+  @apply list-none p-0 m-0;
 }
+
 #fileTree li {
-  margin: 6px 0;
-  list-style: none;
-  width: 100%;
-  box-sizing: border-box;
+  @apply my-1;
 }
+
 #fileTree span {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  white-space: nowrap;
-  max-width: 95%;
-  padding: 4px 8px;
-  margin: 0;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-  font-size: 15px;
-  color: #445564;
-  font-weight: 500;
+  @apply flex items-center text-sm font-bold text-[#445564] py-1 cursor-pointer hover:bg-[#f5f7fa];
 }
-#fileTree span:hover {
-  background-color: #f5f7fa;
-}
+
 .tree-icon {
-  width: 18px;
-  height: 18px;
-  margin-right: 6px;
-  flex-shrink: 0;
-  vertical-align: middle;
-  transition: transform 0.2s ease;
+  @apply mr-2;
 }
+
+.folder-icon {
+  @apply w-[10px] h-auto transition-transform duration-200;
+}
+
+.file-icon {
+  @apply w-[3px] h-auto;
+}
+
+#fileTree ul ul {
+  @apply ml-2;
+}
+
 .empty-folder {
-  color: #bbb;
-  font-style: italic;
-  font-size: 14px;
-  padding: 4px 8px;
+  @apply text-gray-400 italic text-sm py-1 px-2;
 }
+
 .error-node {
-  color: #ff4444;
-  font-style: italic;
-  font-size: 14px;
-  padding: 4px 8px;
+  @apply text-red-500 italic text-sm py-1 px-2;
 }
+
 .sidebar-btn::after {
   content: '';
-  position: absolute;
-  left: -16px;
-  top: -8px;
-  right: -8px;
-  bottom: -8px;
-  z-index: 1;
+  @apply absolute -left-4 -top-2 -right-2 -bottom-2 z-[1];
 }
 
