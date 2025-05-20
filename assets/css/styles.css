@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #445564;
+  --color-background: #f5f7fa;
+  --color-gray: #9ca3af;
+  --color-red: #ef4444;
+}
+
+/* 目录树样式统一优化 */
+
+

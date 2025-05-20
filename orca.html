@@ -26,209 +26,263 @@
   <meta name="apple-mobile-web-app-title" content="长条儿鲸" />
   <meta name="theme-color" content="#ffffff" />
 
-  <title>Orca Editor v1.1.2</title>
-  <link rel="stylesheet" href="/assets/css/function.css">
+  <title>Orca Editor v1.2.1</title>
+  
+  <!-- Tailwind CSS -->
+  <link href="/assets/css/tailwind.output.css" rel="stylesheet">
+  
+  <!-- 自定义样式 -->
+  <!-- <link rel="stylesheet" href="/assets/css/function.css"> -->
   <link rel="stylesheet" href="/assets/css/orca.css">
+  
+  <script>
+    console.log('页面开始加载');
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOM 内容加载完成');
+    });
+    window.onload = () => {
+      console.log('页面完全加载完成');
+    };
+  </script>
 </head>
 
-<body>
-  <div style="display: flex; height: 100vh;">
-    <!-- 左侧目录树 -->
-    <div id="sidebar">
-      <div class="sidebar-header">
-        <div class="logo">
-          <img src="/assets/ui/icons/nav/logo.svg" alt="Orca">
-          <span>Orca</span>
-        </div>
-        <div class="menu-dropdown">
-          <img src="/assets/ui/icons/nav/menu.svg" alt="menu" class="menu-icon">
-          <ul class="dropdown-menu">
-            <li id="select-docs-folder">选择文档库位置</li>
-            <li id="refresh-btn">刷新</li>
-          </ul>
-        </div>
-      </div>
-      <div id="fileTree">
-        <!-- 只显示一个大按钮，居中 -->
-        <div id="no-docs-folder" class="no-docs-folder simple-center">
-          <div class="button-container">
-            <button class="select-folder-btn" id="select-docs-folder-btn">选择本地文档库</button>
-          </div>
-        </div>
-      </div>
+<body class="bg-[#fefdfb]">
+  <!-- 最外层容器：全屏，flex布局，横向排列sidebar和主内容区 -->
+  <div class="relative w-screen h-screen flex overflow-hidden">
+    <!-- logo 绝对定位，z-30，使用 Tailwind 类控制位置和变换 -->
+    <div id="logo" class="absolute left-[27px] top-[13px] z-30 w-[236px] flex flex-col items-center transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] origin-top-left">
+      <img src="/assets/icons/logo.svg" alt="Orca Logo" class="h-20">
     </div>
 
-    <div id="content">
-      <!-- 微信标题栏 -->
-      <div class="wx-header">
-        <div class="toggle-sidebar-btn">☰</div>
-        <div class="menu-wrapper">
-          <div class="menu-btn"></div>
-          <ul class="menu-dropdown">
-            <li id="refresh-btn">刷新</li>
-            <li id="select-docs-folder">选择文档库位置</li>
-            <li id="copy-to-wechat">复制到公众号</li>
-            <li id="show-clipboard-menu">复制HTML</li>
-          </ul>
-        </div>
+    <!-- sidebar btn -->
+    <button id="sidebar-btn" class="fixed z-40 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] left-[296px] top-1/3 rounded-full bg-[#FFFEFA] w-12 h-12 flex items-center justify-center border border-transparent hover:border-[3px] hover:border-[#FAD385] shadow-lg group data-[state=collapsed]:left-[-24px] hover:data-[state=collapsed]:left-[-16px] hover:data-[state=expanded]:left-[292px]" aria-label="展开/收起侧边栏">
+      <img src="/assets/icons/icon-sidebar.svg" alt="展开/收起侧边栏" class="w-6 h-6 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] rotate-180 group-data-[state=collapsed]:rotate-0 group-data-[state=expanded]:rotate-180">
+      <div class="absolute left-full top-1/2 -translate-y-1/2 ml-2 w-auto px-4 py-2 bg-[#FBF3E0] rounded-lg shadow-[3px_3px_10px_0px_rgba(0,0,0,0.05)] opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center font-extrabold text-[16px] leading-[1.2] text-center tracking-[-0.05em] text-[#445564] whitespace-nowrap">
+        展开/收起侧边栏
       </div>
+    </button>
 
-      <!-- 文章内容区域 -->
-      <div class="article-container">
-        <header class="article-header">
-          <h1>我们一起来做鲸鱼吧</h1>
-          <p><a href="#">鲸P</a> <a href="#">长条儿鲸</a> <span>2025年5月12日 14:30</span></p>
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-[320px] min-w-[200px] max-w-[320px] h-screen flex flex-col items-center bg-[#FFFEFA] z-10 relative shadow-[3px_3px_10px_0px_rgba(0,0,0,0.05)] transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden data-[state=collapsed]:w-0 data-[state=collapsed]:min-w-0">
+      <div id="sidebar-content" class="w-full flex flex-col items-center gap-6 mt-[120px] p-5 h-[calc(100vh-120px)] justify-end">
+        <!-- 侧边栏提示文字 -->
+        <div id="no-docs-folder" class="w-[168px] text-center opacity-60 font-[900] text-[32px] leading-[120%] tracking-[-0.05em] text-[#445564] font-['Source_Han_Sans',_'PingFang_SC',_'Microsoft_YaHei',_'Helvetica_Neue',_'Arial',_sans-serif] mb-4">
+          请先加载<br>本地文件夹
+        </div>
+        <div id="fileTree" class="hidden flex-col w-full bg-transparent">
+          <div class="text-[22px] font-black leading-[120%] tracking-[-0.05em] text-[#445564] mb-4 pl-4" id="current-folder"></div>
+          <div class="overflow-y-auto max-h-[calc(100vh-180px)] w-full flex-1 p-0">
+            <ul class="list-none p-0 m-0">
+              <!-- 文件项 -->
+              <li class="my-1">
+                <span class="flex items-center text-sm font-bold text-[#445564] py-1 cursor-pointer hover:bg-[#f5f7fa] group">
+                  <img src="/assets/icons/filetreeArrow.svg" style="width:3px;height:3px;" class="mr-2 flex-shrink-0" alt="file">
+                  <span>文件名</span>
+                </span>
+              </li>
+              <!-- 目录项 -->
+              <li class="my-1">
+                <span class="flex items-center text-sm font-bold text-[#445564] py-1 cursor-pointer hover:bg-[#f5f7fa] group" data-state="collapsed">
+                  <img src="/assets/icons/filetreeArrow.svg" style="width:10px;height:10px;" class="mr-2 flex-shrink-0 transition-transform duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] group-data-[state=expanded]:rotate-90" alt="folder">
+                  <span>文件夹名</span>
+                </span>
+                <!-- 动画容器 -->
+                <div class="overflow-hidden transition-[height] duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]" style="height: 0">
+                  <ul class="list-none p-0 m-0 ml-3">
+                    <li class="italic text-[#9ca3af] text-sm py-1 px-2">（空文件夹）</li>
+                  </ul>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <button id="select-docs-folder-btn" class="w-[247px] h-[59px] rounded-[20.7px] bg-[#34A5DD] text-white text-[1.2rem] font-bold border-2 border-[#445564] shadow-[inset_0px_-1px_0px_2px_rgba(0,0,0,0.1),_inset_0px_3px_0px_0px_rgba(255,255,255,0.2)] flex items-center justify-center transition-colors duration-200 outline-none opacity-100 hover:bg-[#2593c6] hover:border-[#7cc7f7] mb-4">选择文件夹</button>
+      </div>
+    </aside>
+    <!-- workspace 区域，包含 header、内容区、菜单按钮、sidebar btn -->
+    <div id="workspace" class="flex-1 flex flex-col h-screen bg-[#fefdfb] shadow-[3px_3px_10px_0_0_0.05)] transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">
+      <!-- header 区域，去除 border，阴影已加在父级 -->
+      <header class="relative w-full h-[80px] min-h-[80px] max-h-[80px] flex items-end px-0 z-20 overflow-visible transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">
+        <!-- 一体化 header 背景和圆弧，SVG 宽度100%，右侧锚点拉伸，带阴影 -->
+        <div class="absolute left-0 top-0 z-30 w-full h-[217.57px] pointer-events-none select-none">
+          <svg width="100%" height="217.57" viewBox="0 0 1000 217.57" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <defs>
+              <filter id="headerShadow" x="-6" y="0" width="1020" height="230" filterUnits="userSpaceOnUse">
+                <feDropShadow dx="3" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.08"/>
+              </filter>
+            </defs>
+            <g filter="url(#headerShadow)">
+              <path d="M0,217.2C0,143.3,0,115.1,22.3,97.6C44.6,80,80.5,80,174.56,80L1000,80L1000,0L0,0L0,217.2Z" fill="#FFFEFA"/>
+            </g>
+          </svg>
+        </div>
+      </header>
+      <!-- 内容区：content-area，水平居中，header下方50px，宽高固定，阴影，背景白色，全部用 Tailwind class -->
+      <div id="content" class="mx-auto mt-[30px] w-[393px] h-[852px] bg-white shadow-[0_4px_20px_0_rgba(0,0,0,0.1)] rounded-none flex flex-col z-20 overflow-y-auto overflow-x-visible">
+        <img src="/assets/images/iOSHeader.png" alt="iOS Header" class="block w-full h-auto pt-4 mx-auto sticky top-0 z-20 bg-[#FFFEFA]" />
+        <!-- 文章区域内容 -->
+        <header class="article-header px-8 break-all overflow-x-visible">
+          <h1 class="text-[22px] font-normal text-[#191919] tracking-[0.02em] whitespace-normal break-all">欢迎使用 Orca</h1>
+          <p class="text-[15px] mt-2 whitespace-normal break-all">
+            <a href="#" class="text-[#596D96] hover:underline whitespace-normal break-all">鲸P</a> 
+            <a href="#" class="text-[#596D96] hover:underline ml-2 whitespace-normal break-all">长条儿鲸</a> 
+            <span class="text-[15px] text-gray-400 ml-2 whitespace-normal break-all">2025年5月12日 14:30</span>
+          </p>
         </header>
-        <main class="note-to-mp">
-          <p>
-          <figure><img src="https://cdn.jsdelivr.net/gh/pericn/Changtiaoer/MPic/Landscape%401x.png" alt=""></figure>
-          </p>
-          <p>你好，欢迎来到「长条儿鲸」。</p>
-          <p>我想在这里共振你内在那个<strong>已经疲惫、但仍在寻找</strong>的自己。</p>
-          <p>这里不会有"正确做法"，也不会教你如何快速好起来。</p>
-          <p>但我希望能陪伴你提升一种"内在分辨率"——看清楚自己的感受、听懂自己的声音。</p>
-          <p><strong>不再被情绪推着跑，也不再压抑它</strong>。</p>
-          <h2>我是谁</h2>
-          <p>你好，我叫李帅。</p>
-          <p>因为我热爱虎鲸，又因为微信名字用了很多年的 <code>Peric👾</code>
-            当做昵称，所以后面或许也会在这里使用"<strong>鲸P</strong>"这个名字。<code>(但其实是一个要扣钱的谐音梗)</code></p>
-          <p>
-          <figure><img src="https://cdn.jsdelivr.net/gh/pericn/Changtiaoer/MPic/tatoo.png"
-              alt="我的纹身—一头不同角度看，正在浮窥//跃入水中的虎鲸">
-            <figcaption>我的纹身—一头不同角度看，正在浮窥//跃入水中的虎鲸</figcaption>
-          </figure>
-          </p>
-          <p>我好像是一个<strong>不太会停止探索的人</strong>。</p>
-          <p>小学学PS，初中大量玩游戏，高中学 C/C++，大学开始尝试用插件做游戏的 UI。于是自然而然地，大二决定放弃大学专业（建筑工程管理），投身当时刚冒头的移动互联网行业。扎身在蓝海之中探索，随着中文互联网一起学 UI
-            设计、交互设计，最后转职为产品经理。</p>
-          <p>从北京离职的时候，我还没想清楚是出去读书还是在杭州继续找个互联网工作，但在吴迪和一众前同事的怂恿下，去参加了内观禅修。<strong>10
-              天的静默和冥想让我突然慢了下来，对「时间」有了新的感受</strong>。结束之后我忽然觉得，我不想再回到互联网行业了。对这个行业的热忱已经被KPI、日报、周报和加班消耗殆尽，取而代之的是<strong>随时在焦虑，随时想「变得更好」</strong>。
-          </p>
-          <p>随后的几年，在吴迪的影响下，我莫名进入到了身心灵行业。之后我做学员、做助教、做翻译、主办课程。这几年里，我逐渐了解到了 Thomas Hübl 和他的课程<strong>TWT</strong>
-            <code>Timeless Wisdom Training</code> ，也如愿报上了名。
-          </p>
-          <p>两年 TWT 结束后的某天，我忽然觉得：我需要独立出来了，也需要停下来好好休息一下了。所以我停掉了所有手头的项目，<strong>从「学会休息」开始新的征程</strong>。</p>
-          <p>之后的 406 天，我好像经历了一次漫长的生产，直到今天，我决定发出来这篇文章。</p>
-          <p><strong>而写下这段文字的这个时刻，我觉得以前所有的经历，正串连在一起，共同编织了这个「当下」。</strong></p>
-          <h2>为什么叫"长条儿鲸"？</h2>
-          <p>首先是鲸——我喜欢虎鲸，所以放进了账号的名字里。</p>
-          <p>这一切起源于那只"<strong>杀人鲸</strong>"。</p>
-          <p>它的名字叫做<strong>提里库姆</strong><code>Tilikum</code>，在美国西北太平洋原住民契努克语中，寓意为<strong>朋友</strong>。</p>
-          <p>截止到 2025 年，全世界范围没有任何野生虎鲸致人死亡的记录。而仅有的<strong>四起圈养虎鲸</strong>致人死亡记录中，<strong>三起</strong>来源于提里库姆。</p>
-          <p>它 2
-            岁时就被人类捕捉、圈养，之后被迫展示训练娱乐表演长达33年。而野外虎鲸的寿命和人类寿命相仿，甚至远高于农业社会之前的人类寿命。但他的三次"犯罪记录"还是"成功"地让虎鲸这个族群坐实了"<strong>杀人</strong>"的称号。
-          </p>
-          <blockquote>
-            <p>实际上<strong>杀人鲸</strong>的说法来自英文 <strong>Killer Whale</strong> <code>杀手鲸</code> 的不不恰当翻译。在英文中 Killer Whale
-              虽然也存在广泛误解，但是可以更轻松地找到源头说法是 Whale Killer <code>鲸鱼杀手</code> ——指虎鲸是海洋中的顶级捕食者，甚至很多大型鲸豚都在其捕猎范围内。</p>
-          </blockquote>
-          <p>
-            但实际上虎鲸不仅友好，在野外它们可以形成稳定的母系社会结构，用属于它们的语言沟通，然后共同狩猎，深潜、上游、浮窥、跳跃、捕猎、玩耍……有时候我甚至会觉得，<strong>它们像是一群"点错了进化点数"的人类，迷途在海洋</strong>。
-          </p>
-          <p>
-          <figure><img src="https://cdn.jsdelivr.net/gh/pericn/Changtiaoer/MPic/Avatar%401x.png" alt="浮窥中仰望星空">
-            <figcaption>浮窥中仰望星空</figcaption>
-          </figure>
-          </p>
-          <p>
-            所以，我最终选择了"虎鲸浮窥"这个形象作为这个账号的头像。而每一次虎鲸的浮窥，都要经历<strong>深潜、奋力上游</strong>，然后给出<strong>恰到好处</strong>的一跃，让自己脑袋能够在海面上停留几秒，看看"<strong>外面的世界</strong>"。我喜欢这样的意象，因为这里似乎带有许多
-            <strong>"修行"的隐喻</strong>。
-          </p>
-          <p>而「长条儿」姑且就算是增加一点趣味和可爱，让「修行」这条路多一点 <strong>playfulness</strong>。</p>
-          <p>说到底，"长条儿鲸"是一个听起来不太顺畅的名字，<strong>但我也喜欢它的不完美</strong>，就像我们的情绪和状态，也不总是整齐、顺畅、好理解。</p>
-          <p>但这些东西，也值得<strong>被看见、被听见</strong>。</p>
-          <h2>你会在这里看到什么？</h2>
-          <p>一些写给正在「探索自己」的人的内容。</p>
-          <p>（你也可以叫它修行/灵性/心理学等等名字）</p>
-          <p>我想要尝试用<strong>最简单的语言</strong>，去书写我的体验。以此在网络的这片海洋里，<strong>发出一道声波，寻求一些共鸣。</strong></p>
-          <blockquote>
-            <p>比如:</p>
-            <blockquote>
-              <p>在养宠物的时候，<br>
-                我们为什么会突然被触动；</p>
-              <p>在吵架之后，<br>
-                为什么又悄悄陷入自责；</p>
-              <p>在面对情绪时，<br>
-                我们是否总是急着跳到"应该做点什么"。</p>
-              <p>在看到一些社会事件时，<br>
-                那喷涌而出的情绪到底是什么……</p>
-            </blockquote>
-          </blockquote>
-          <p>而我分享这些，不是为了告诉你怎么"修好自己"，而是希望你能开始和自己好好相处。</p>
-          <p>不是完美，而是真实地活。</p>
-          <p>如果这些话能让你松一口气，那我们或许已经在共振了。</p>
+        <main class="note-to-mp px-8 pt-2 break-all overflow-x-visible">
+          <!-- 这里放置文章内容或欢迎引导内容 -->
         </main>
       </div>
+      <!-- 菜单按钮组：绝对定位，吸附在 workspace 右上角 -->
+      <div class="absolute z-30" style="right: 24px; top: 130px;">
+        <div class="flex flex-col gap-4">
+          <button id="refresh-btn" class="rounded-full bg-[#FFFEFA] shadow-lg w-12 h-12 flex items-center justify-center border border-transparent transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[#FFFEFA] hover:-translate-y-0.5 hover:border-[3px] hover:border-[#FAD385] hover:shadow-[3px_7px_10px_0px_rgba(0,0,0,0.05)] group relative">
+            <img src="/assets/icons/refresh.svg" alt="刷新" class="w-6 h-6">
+            <div class="absolute right-full top-1/2 -translate-y-1/2 mr-2 w-auto px-4 py-2 bg-[#FBF3E0] rounded-lg shadow-[3px_3px_10px_0px_rgba(0,0,0,0.05)] opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center font-extrabold text-[16px] leading-[1.2] text-center tracking-[-0.05em] text-[#445564] whitespace-nowrap">刷新</div>
+          </button>
+          <button id="copy-to-wechat-btn" class="rounded-full bg-[#FFFEFA] shadow-lg w-12 h-12 flex items-center justify-center border border-transparent transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[#FFFEFA] hover:-translate-y-0.5 hover:border-[3px] hover:border-[#FAD385] hover:shadow-[3px_7px_10px_0px_rgba(0,0,0,0.05)] group relative">
+            <img src="/assets/icons/copyToWXmp.svg" alt="复制到公众号" class="w-6 h-6">
+            <div class="absolute right-full top-1/2 -translate-y-1/2 mr-2 w-auto px-4 py-2 bg-[#FBF3E0] rounded-lg shadow-[3px_3px_10px_0px_rgba(0,0,0,0.05)] opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center font-extrabold text-[16px] leading-[1.2] text-center tracking-[-0.05em] text-[#445564] whitespace-nowrap">复制到公众号</div>
+          </button>
+          <button id="copy-html-btn" class="rounded-full bg-[#FFFEFA] shadow-lg w-12 h-12 flex items-center justify-center border border-transparent transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[#FFFEFA] hover:-translate-y-0.5 hover:border-[3px] hover:border-[#FAD385] hover:shadow-[3px_7px_10px_0px_rgba(0,0,0,0.05)] group relative">
+            <img src="/assets/icons/copyToHtml.svg" alt="复制HTML" class="w-6 h-6">
+            <div class="absolute right-full top-1/2 -translate-y-1/2 mr-2 w-auto px-4 py-2 bg-[#FBF3E0] rounded-lg shadow-[3px_3px_10px_0px_rgba(0,0,0,0.05)] opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center font-extrabold text-[16px] leading-[1.2] text-center tracking-[-0.05em] text-[#445564] whitespace-nowrap">复制HTML</div>
+          </button>
+          <button id="select-docs-folder-menu-btn" class="rounded-full bg-[#FFFEFA] shadow-lg w-12 h-12 flex items-center justify-center border border-transparent transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[#FFFEFA] hover:-translate-y-0.5 hover:border-[3px] hover:border-[#FAD385] hover:shadow-[3px_7px_10px_0px_rgba(0,0,0,0.05)] group relative">
+            <img src="/assets/icons/library.svg" alt="重新选择文档库" class="w-6 h-6">
+            <div class="absolute right-full top-1/2 -translate-y-1/2 mr-2 w-auto px-4 py-2 bg-[#FBF3E0] rounded-lg shadow-[3px_3px_10px_0px_rgba(0,0,0,0.05)] opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center font-extrabold text-[16px] leading-[1.2] text-center tracking-[-0.05em] text-[#445564] whitespace-nowrap">重新选择文档库</div>
+          </button>
+        </div>
+      </div>
+      <!-- 虎鲸插画：绝对定位，右下角，最大高420px，z-20 -->
+      <img src="/assets/icons/orca_smile.svg" alt="Orca Whale" class="absolute right-10 bottom-0 max-h-[420px] pointer-events-none select-none" style="z-index:2;">
     </div>
   </div>
 
-  <!-- 加载必要的库 -->
+  <!-- 加载提示 -->
+  <div id="loading" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white/90 px-8 py-4 rounded-lg shadow-lg z-50 font-semibold text-[#445564] hidden">
+    加载中...
+  </div>
+
+  <script>
+    // 添加一个全局错误处理器
+    window.onerror = function(msg, url, line, col, error) {
+      showError('应用出错，请刷新页面重试');
+      return false;
+    };
+    
+    // 添加一个未捕获的 Promise 错误处理器
+    window.addEventListener('unhandledrejection', function(event) {
+      showError('操作失败，请重试');
+    });
+  </script>
+
+  <!-- 先加载外部依赖 -->
   <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/markdown-it-mark/dist/markdown-it-mark.min.js"></script>
-
-  <!-- 加载应用脚本 -->
   <script type="module">
-    import { copyContentToClipboardWithStyle, copyRawHtml } from './copyToWeChat.js';
-    import './orca.js';
+    // 等待 DOM 加载完成
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        // 确保 markdown-it 已加载
+        if (typeof markdownit === 'undefined') {
+          throw new Error('markdown-it 未正确加载');
+        }
+        
+        // 先导入工具函数
+        const utils = await import('./utils.js');
+        window.showError = utils.showError;
+        window.showSuccess = utils.showSuccess;
+        window.showLoading = utils.showLoading;
+        window.hideLoading = utils.hideLoading;
+        
+        // 导入复制功能
+        const copyModule = await import('./copyToWeChat.js');
+        window.copyRawHtml = copyModule.copyRawHtml;
+        window.copyContentToClipboardWithStyle = copyModule.copyContentToClipboardWithStyle;
+        
+        // 最后导入并初始化主程序
+        const { selectDocsFolder, toggleSidebar, showWelcomePage, loadMarkdown } = await import('./orca.js');
 
-    // 检测是否为微信浏览器
-    const isWeChatBrowser = /MicroMessenger/i.test(navigator.userAgent);
-    if (isWeChatBrowser) {
-      document.querySelector('.wx-header').style.display = 'none';
-      document.getElementById('sidebar').style.display = 'none'; // 隐藏目录栏
-    }
+        // 绑定重新选择文档库按钮事件
+        const selectDocsFolderMenuBtn = document.getElementById('select-docs-folder-menu-btn');
+        if (selectDocsFolderMenuBtn) {
+          selectDocsFolderMenuBtn.onclick = async () => {
+            try {
+              window.showLoading('正在选择文档库...');
+              await selectDocsFolder();
+            } catch (error) {
+              window.showError('选择文档库失败，请重试');
+            } finally {
+              window.hideLoading();
+            }
+          };
+        }
 
-    function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const content = document.getElementById('content');
-      const wxHeader = document.querySelector('.wx-header');
-      const isHidden = sidebar.style.display === 'none';
+        // 测试按钮事件绑定
+        const copyHtmlBtn = document.getElementById('copy-html-btn');
+        if (copyHtmlBtn) {
+          copyHtmlBtn.onclick = async () => {
+            try {
+              await window.copyRawHtml();
+              window.showSuccess('已复制 HTML');
+            } catch (e) {
+              window.showError(`复制失败: ${e.message || '未知错误'}`);
+            }
+          };
+        }
 
-      // 切换 sidebar 的显示状态
-      sidebar.style.display = isHidden ? 'block' : 'none';
+        // 测试其他按钮
+        const refreshBtn = document.getElementById('refresh-btn');
+        if (refreshBtn) {
+          refreshBtn.onclick = () => location.reload();
+        }
 
-      // 根据 sidebar 的状态调整 content 的 margin-left 和 wx-header 的宽度
-      content.style.marginLeft = isHidden ? '20%' : '0';
-      wxHeader.style.width = isHidden ? 'calc(100% - 20%)' : '100%';
-    }
+        const copyToWechatBtn = document.getElementById('copy-to-wechat-btn');
+        if (copyToWechatBtn) {
+          copyToWechatBtn.onclick = async () => {
+            try {
+              await window.copyContentToClipboardWithStyle();
+            } catch (e) {
+              window.showError('复制失败');
+            }
+          };
+        }
 
-    // 将 toggleSidebar 函数添加到全局作用域
-    window.toggleSidebar = toggleSidebar;
+        const sidebarBtn = document.getElementById('sidebar-btn');
+        if (sidebarBtn) {
+          sidebarBtn.onclick = () => {
+            toggleSidebar();
+          };
+        }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const sidebarBtn = document.querySelector('.toggle-sidebar-btn');
-      sidebarBtn.addEventListener('click', toggleSidebar);
+        // 初始化文件选择功能
+        const selectFolderBtn = document.getElementById('select-docs-folder-btn');
+        if (selectFolderBtn) {
+          selectFolderBtn.onclick = async () => {
+            try {
+              window.showLoading('正在选择文档库...');
+              await selectDocsFolder();
+            } catch (error) {
+              window.showError('选择文档库失败，请重试');
+            } finally {
+              window.hideLoading();
+            }
+          };
+        }
 
-      // 复制到公众号按钮
-      const copyToWechatBtn = document.getElementById('copy-to-wechat');
-      if (copyToWechatBtn) {
-        copyToWechatBtn.addEventListener('click', async () => {
-          try {
-            await copyContentToClipboardWithStyle();
-          } catch (error) {
-            console.error('复制到公众号失败:', error);
-          }
-        });
-      }
+        // 初始化欢迎页面
+        await showWelcomePage();
 
-      // 复制 HTML 按钮
-      const copyHtmlBtn = document.getElementById('show-clipboard-menu');
-      if (copyHtmlBtn) {
-        copyHtmlBtn.addEventListener('click', async () => {
-          try {
-            await copyRawHtml();
-          } catch (error) {
-            console.error('复制 HTML 失败:', error);
-          }
-        });
-      }
-
-      // 刷新按钮
-      const refreshBtn = document.getElementById('refresh-btn');
-      if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => {
-          location.reload();
-        });
+      } catch (error) {
+        const contentDiv = document.querySelector('.note-to-mp');
+        if (contentDiv) {
+          contentDiv.innerHTML = `
+            <h1>初始化失败</h1>
+            <p>应用加载失败，请刷新页面重试。</p>
+            <p>错误信息：${error.message}</p>
+          `;
+        }
       }
     });
   </script>

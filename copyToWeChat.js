@@ -1,4 +1,4 @@
-import { showSuccess, showError } from './orca.js';
+import { showSuccess, showError } from './utils.js';
 
 export async function copyContentToClipboardWithStyle() {
   try {
@@ -50,56 +50,57 @@ export async function copyContentToClipboardWithStyle() {
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      showSuccess('内容已复制到剪贴板！（使用备用方法）');
+      showSuccess('内容已复制到剪贴板，可以粘贴到公众号编辑器中！');
     }
   } catch (error) {
-    console.error('复制内容时出错:', error);
-    showError('复制失败，请检查控制台错误信息。');
     throw error;
   }
 }
 
 export async function copyRawHtml() {
   try {
-    // 获取文章内容
-    const main = document.querySelector('main.note-to-mp');
+    const main = document.querySelector('.note-to-mp');
+    
     if (!main) {
-      throw new Error('未找到文章内容区域');
+      throw new Error('找不到内容区域');
     }
-
-    // 获取完整的 HTML 内容
-    const htmlContent = main.outerHTML;
-    console.log('HTML content to copy:', htmlContent);
-
-    // 复制到剪贴板
+    
+    const content = main.innerHTML;
+    
+    // 尝试复制
     try {
-      // 使用 Clipboard API
-      await navigator.clipboard.writeText(htmlContent);
-      console.log('HTML copied successfully using Clipboard API');
-      showSuccess('HTML 代码已复制到剪贴板！');
-    } catch (err) {
-      console.log('Clipboard API failed, using fallback method');
-      // 如果 clipboard API 不可用，使用传统方法
-      const textarea = document.createElement('textarea');
-      textarea.value = htmlContent;
-      textarea.style.position = 'fixed';  // 防止页面滚动
-      textarea.style.opacity = '0';       // 隐藏元素
-      document.body.appendChild(textarea);
-      textarea.select();
-      
-      const successful = document.execCommand('copy');
-      document.body.removeChild(textarea);
-      
-      if (successful) {
-        console.log('HTML copied successfully using fallback method');
-        showSuccess('HTML 代码已复制到剪贴板！（使用备用方法）');
-      } else {
-        throw new Error('复制失败');
+      // 方法1: 剪贴板API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(content);
+        return true;
       }
+      
+      // 方法2: execCommand
+      const textarea = document.createElement('textarea');
+      textarea.value = content;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      
+      try {
+        textarea.select();
+        const success = document.execCommand('copy');
+        if (!success) {
+          throw new Error('execCommand 复制失败');
+        }
+        return true;
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    } catch (copyError) {
+      throw new Error(`复制失败: ${copyError.message}`);
     }
   } catch (error) {
-    console.error('复制 HTML 代码时出错:', error);
-    showError('复制失败，请检查控制台错误信息。');
     throw error;
   }
+}
+
+// 添加自检函数
+export function verifyCopyFunction() {
+  return typeof copyRawHtml === 'function';
 }

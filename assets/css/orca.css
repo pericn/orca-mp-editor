@@ -20,7 +20,8 @@
  * Bear 的配色方案位于 src/themes/bear-palettes 目录下。
  */
 
- :root {
+
+:root {
   --fontcolor: rgb(53, 50, 40); /* 定义全局变量 fontcolor */
   font-size: 17px;
 }

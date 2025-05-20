@@ -1,4 +1,5 @@
 import { copyContentToClipboardWithStyle } from './copyToWeChat.js';
+import { showSuccess, showError, showLoading, hideLoading } from './utils.js';
 
 // 初始化 markdown-it
 let md;
@@ -6,7 +7,6 @@ try {
   md = new markdownit();
   md.use(markdownitMark);
 } catch (error) {
-  console.error('初始化 Markdown 解析器失败:', error);
   showError('初始化编辑器失败，请刷新页面重试');
 }
 
@@ -19,70 +19,118 @@ md.renderer.rules.image = (tokens, idx) => {
     const figcaption = alt ? `<figcaption>${alt}</figcaption>` : '';
     return `<figure><img src="${src}" alt="${alt}" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'24\\' height=\\'24\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23ccc\\' d=\\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.9 13.98l2.1 2.53 3.1-3.99c.2-.26.6-.26.8.01l3.51 4.68a.5.5 0 0 1-.4.8H6.02c-.42 0-.65-.48-.39-.81L8.12 14c.19-.26.57-.27.78-.02z\'/%3E%3C/svg%3E'">${figcaption}</figure>`;
   } catch (error) {
-    console.error('渲染图片时出错:', error);
     return `<div class="error-placeholder">图片加载失败</div>`;
   }
 };
+
+// 更新父级容器的高度
+function updateParentHeights(element) {
+  let current = element;
+  while (current) {
+    const parentWrapper = current.closest('div[class*="overflow-hidden"]');
+    if (!parentWrapper || !parentWrapper.querySelector('ul')) break;
+    
+    // 立即更新父级容器高度
+    const ul = parentWrapper.querySelector('ul');
+    parentWrapper.style.height = `auto`;
+    
+    current = parentWrapper.parentElement;
+  }
+}
+
+// 更新文件树容器高度
+function updateFileTreeHeight() {
+  const fileTree = document.getElementById('fileTree');
+  const treeContainer = fileTree.querySelector('div.overflow-y-auto');
+  if (treeContainer) {
+    const rootUl = treeContainer.querySelector('ul');
+    if (rootUl) {
+      treeContainer.style.height = `auto`;
+    }
+  }
+}
 
 // 创建树节点
 function createTreeNode(node) {
   try {
     const li = document.createElement('li');
+    li.className = 'my-1';
     const span = document.createElement('span');
-    span.textContent = node.name;
+    span.className = 'flex items-center text-sm font-bold text-[#445564] py-1 cursor-pointer hover:bg-[#f5f7fa] group';
 
     if (node.type === 'file') {
-      span.style.cursor = 'pointer';
-      span.innerHTML = '<img src="/assets/ui/icons/nav/markdown.svg" class="tree-icon" alt="markdown">' + node.name;
+      span.innerHTML = `
+        <img src="/assets/icons/filetreeArrow.svg" style="width:3px;height:3px;" class="mr-2 flex-shrink-0" alt="file">
+        <span>${node.name}</span>
+      `;
       span.onclick = () => loadMarkdown(node.path);
       li.appendChild(span);
     } else if (node.type === 'directory') {
-      span.innerHTML = '<img src="/assets/ui/icons/nav/folder-arrow.svg" class="tree-icon" alt="folder">' + node.name;
-      span.style.cursor = 'pointer';
-      span.onclick = () => {
+      span.dataset.state = 'collapsed';
+      span.innerHTML = `
+        <img src="/assets/icons/filetreeArrow.svg" style="width:10px;height:10px;" class="mr-2 flex-shrink-0 transition-transform duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] group-data-[state=expanded]:rotate-90" alt="folder">
+        <span>${node.name}</span>
+      `;
+      
+      // 创建内容容器
+      const wrapper = document.createElement('div');
+      wrapper.className = 'grid transition-[grid-template-rows] duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]';
+      wrapper.dataset.state = 'collapsed';
+      wrapper.style.gridTemplateRows = '0fr';
+
+      const inner = document.createElement('div');
+      inner.className = 'overflow-hidden';
+      wrapper.appendChild(inner);
+
+      const subUl = document.createElement('ul');
+      subUl.className = 'list-none p-0 m-0 ml-3';
+      inner.appendChild(subUl);
+
+      span.onclick = async (event) => {
         try {
-          const ul = li.querySelector('ul');
-          if (ul) {
-            const isHidden = ul.style.display === 'none';
-            ul.style.display = isHidden ? 'block' : 'none';
-            const icon = span.querySelector('.tree-icon');
-            if (icon) {
-              icon.style.transform = isHidden ? 'rotate(90deg)' : 'rotate(0deg)';
+          event.stopPropagation();
+          const isCollapsed = span.dataset.state === 'collapsed';
+          
+          if (isCollapsed) {
+            // 如果子目录还没有加载，先加载内容
+            if (subUl.children.length === 0) {
+              if (node.children && node.children.length > 0) {
+                node.children
+                  .sort((a, b) => {
+                    if (a.type !== b.type) {
+                      return a.type === 'directory' ? -1 : 1;
+                    }
+                    return a.name.localeCompare(b.name);
+                  })
+                  .forEach(child => subUl.appendChild(createTreeNode(child)));
+              } else {
+                const emptyMessage = document.createElement('li');
+                emptyMessage.textContent = '（空文件夹）';
+                emptyMessage.className = 'italic text-[#9ca3af] text-sm py-1 px-2';
+                subUl.appendChild(emptyMessage);
+              }
             }
+            
+            // 展开动画
+            span.dataset.state = 'expanded';
+            wrapper.dataset.state = 'expanded';
+            wrapper.style.gridTemplateRows = '1fr';
+          } else {
+            // 收起动画
+            span.dataset.state = 'collapsed';
+            wrapper.dataset.state = 'collapsed';
+            wrapper.style.gridTemplateRows = '0fr';
           }
         } catch (error) {
-          console.error('切换目录显示状态时出错:', error);
         }
       };
 
-      const ul = document.createElement('ul');
-      ul.style.display = 'none';
-
-      if (node.children && node.children.length > 0) {
-        node.children
-          .sort((a, b) => {
-            // 目录排在文件前面
-            if (a.type !== b.type) {
-              return a.type === 'directory' ? -1 : 1;
-            }
-            // 同类型按名称排序
-            return a.name.localeCompare(b.name);
-          })
-          .forEach(child => ul.appendChild(createTreeNode(child)));
-      } else {
-        const emptyMessage = document.createElement('li');
-        emptyMessage.textContent = '（空文件夹）';
-        emptyMessage.className = 'empty-folder';
-        ul.appendChild(emptyMessage);
-      }
-
       li.appendChild(span);
-      li.appendChild(ul);
+      li.appendChild(wrapper);
     }
 
     return li;
   } catch (error) {
-    console.error('创建树节点时出错:', error);
     const errorNode = document.createElement('li');
     errorNode.className = 'error-node';
     errorNode.textContent = '加载失败';
@@ -91,126 +139,156 @@ function createTreeNode(node) {
 }
 
 // 加载 Markdown 文件并渲染
-async function loadMarkdown(content) {
+export async function loadMarkdown(content, filename = '') {
   try {
     showLoading('正在加载文档...');
     
-    // 移除 YAML front matter
-    content = content.replace(/^---[\s\S]*?---/, '').trim();
-
-    // 提取标题
-    const titleMatch = content.match(/^#\s+(.*)$/m);
-    const title = titleMatch ? titleMatch[1].trim() : '未命名文档';
-
-    // 移除标题
-    if (titleMatch) {
-      content = content.replace(/^#\s+.*$/m, '').trim();
+    let markdownContent = content;
+    
+    // 如果传入的是字符串路径，则从该路径加载内容
+    if (typeof content === 'string' && content.startsWith('/')) {
+      // 如果是欢迎页面，使用 fetch
+      if (content === '/assets/docs/welcome.md') {
+        const response = await fetch(content);
+        if (!response.ok) {
+          throw new Error(`加载文件失败: ${response.status}`);
+        }
+        markdownContent = await response.text();
+      }
     }
-
+    
+    // 确保 markdown-it 实例已正确初始化
+    if (!md) {
+      md = new markdownit();
+      md.use(markdownitMark);
+    }
+    
+    // 移除 YAML front matter
+    const cleanContent = markdownContent.replace(/^---[\s\S]*?---/, '').trim();
+    
+    // 提取标题
+    const titleMatch = cleanContent.match(/^#\s+(.*)$/m);
+    let title = titleMatch ? titleMatch[1].trim() : '';
+    
+    // 移除标题
+    const contentWithoutTitle = titleMatch
+      ? cleanContent.replace(/^#\s+.*$/m, '').trim()
+      : cleanContent;
+    
     // 渲染 Markdown
-    let renderedContent = md.render(content);
+    let renderedContent = md.render(contentWithoutTitle);
     
     // 处理 h2 标签中的换行
     renderedContent = renderedContent.replace(/<h2(.*?)>(.*?)<\/h2>/g, (match, attrs, content) => {
       const processedContent = content.replace(/&lt;br&gt;/g, '<br>');
       return `<h2${attrs}>${processedContent}</h2>`;
     });
-
+    
+    // 如果没有 h1，用文件名（去掉 .md）作为标题
+    if (!title && filename) {
+      title = filename.replace(/\.md$/, '');
+    }
+    if (!title) {
+      title = '未命名文档';
+    }
+    
     // 更新标题
-    const titleElement = document.querySelector('#content h1');
+    const titleElement = document.querySelector('.article-header h1');
     if (titleElement) {
       titleElement.textContent = title;
     }
-
+    
     // 更新内容
-    const contentDiv = document.querySelector('#content main.note-to-mp');
+    const contentDiv = document.querySelector('.note-to-mp');
     if (contentDiv) {
       contentDiv.innerHTML = renderedContent;
     }
   } catch (error) {
-    console.error('加载 Markdown 文件时出错:', error);
     showError('加载文档失败，请重试');
+    
+    // 如果加载失败，显示默认内容
+    const contentDiv = document.querySelector('.note-to-mp');
+    if (contentDiv) {
+      contentDiv.innerHTML = `
+        <h1>加载失败</h1>
+        <p>文档加载失败，请重试。</p>
+        <p>错误信息：${error.message}</p>
+      `;
+    }
   } finally {
     hideLoading();
   }
 }
 
+// 节流 resize 事件
+let resizeTimeout = null;
+function throttledHandleMobileView() {
+  if (resizeTimeout) clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(handleMobileView, 100);
+}
+
 // 侧边栏切换函数
 export function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
-  const content = document.getElementById('content');
-  if (sidebar && content) {
-    sidebar.classList.toggle('hidden');
-    content.classList.toggle('expanded');
+  const sidebarBtn = document.getElementById('sidebar-btn');
+  const logo = document.getElementById('logo');
+  const workspace = document.getElementById('workspace');
+
+  if (!sidebar || !sidebarBtn || !logo || !workspace) {
+    return;
   }
+
+  const isCollapsed = sidebar.dataset.state === 'collapsed';
+  
+  // 使用 requestAnimationFrame 确保动画流畅
+  requestAnimationFrame(() => {
+    if (isCollapsed) {
+      // 展开侧边栏
+      sidebar.dataset.state = 'expanded';
+      sidebarBtn.dataset.state = 'expanded';
+      logo.classList.remove('scale-75');
+      logo.classList.remove('top-[6px]');
+      logo.classList.add('top-[13px]');
+    } else {
+      // 收起侧边栏
+      sidebar.dataset.state = 'collapsed';
+      sidebarBtn.dataset.state = 'collapsed';
+      logo.classList.add('scale-75');
+      logo.classList.add('top-[6px]');
+      logo.classList.remove('top-[13px]');
+    }
+  });
+
+  // 保存侧边栏状态到 localStorage
+  localStorage.setItem('sidebarCollapsed', !isCollapsed);
 }
 
-// UI 状态管理
-export function showLoading(message = '加载中...') {
-  const loading = document.getElementById('loading') || createLoadingElement();
-  loading.textContent = message;
-  loading.style.display = 'block';
-}
+// 初始化侧边栏状态
+export function initSidebarState() {
+  const sidebar = document.getElementById('sidebar');
+  const sidebarBtn = document.getElementById('sidebar-btn');
+  const logo = document.getElementById('logo');
+  const workspace = document.getElementById('workspace');
 
-export function hideLoading() {
-  const loading = document.getElementById('loading');
-  if (loading) {
-    loading.style.display = 'none';
+  if (!sidebar || !sidebarBtn || !logo || !workspace) {
+    return;
   }
-}
 
-export function showError(message) {
-  const toast = document.createElement('div');
-  toast.className = 'toast error';
-  toast.innerHTML = `
-    <div class="status-dot"></div>
-    <div class="message">${message}</div>
-  `;
-  document.body.appendChild(toast);
+  // 从 localStorage 读取状态
+  const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
   
+  // 设置初始状态
   requestAnimationFrame(() => {
-    toast.classList.add('show');
+    if (isCollapsed) {
+      sidebar.dataset.state = 'collapsed';
+      sidebarBtn.dataset.state = 'collapsed';
+      logo.classList.add('scale-75');
+    } else {
+      sidebar.dataset.state = 'expanded';
+      sidebarBtn.dataset.state = 'expanded';
+      logo.classList.remove('scale-75');
+    }
   });
-  
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => {
-      if (toast.parentNode) {
-        document.body.removeChild(toast);
-      }
-    }, 300);
-  }, 3000);
-}
-
-export function showSuccess(message) {
-  const toast = document.createElement('div');
-  toast.className = 'toast success';
-  toast.innerHTML = `
-    <div class="status-dot"></div>
-    <div class="message">${message}</div>
-  `;
-  document.body.appendChild(toast);
-  
-  requestAnimationFrame(() => {
-    toast.classList.add('show');
-  });
-  
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => {
-      if (toast.parentNode) {
-        document.body.removeChild(toast);
-      }
-    }, 300);
-  }, 3000);
-}
-
-function createLoadingElement() {
-  const loading = document.createElement('div');
-  loading.id = 'loading';
-  loading.className = 'loading-indicator';
-  document.body.appendChild(loading);
-  return loading;
 }
 
 // 保存文件夹句柄
@@ -225,13 +303,12 @@ async function saveDocsFolder(dirHandle) {
     }
     return false;
   } catch (error) {
-    console.error('保存文档库位置失败:', error);
     return false;
   }
 }
 
 // 检查是否有保存的文档库位置
-async function checkAndRestoreDocsFolder() {
+export async function checkAndRestoreDocsFolder() {
   try {
     // 显示加载提示
     showLoading('正在加载文档库...');
@@ -249,14 +326,12 @@ async function checkAndRestoreDocsFolder() {
           return;
         }
       } catch (error) {
-        console.log('验证权限时出错:', error);
       }
     }
 
     // 如果没有有效的句柄，显示欢迎页面
     showWelcomePage();
   } catch (error) {
-    console.error('加载文档库失败:', error);
     showError('加载文档库失败，请重新选择');
     showWelcomePage();
   } finally {
@@ -278,7 +353,6 @@ async function handleValidDirectory(dirHandle) {
       throw new Error('没有足够的权限访问文档库');
     }
   } catch (error) {
-    console.error('验证目录权限失败:', error);
     showError('无法访问文档库，请重新选择');
     showWelcomePage();
   }
@@ -290,111 +364,181 @@ function clearDocsFolderCache() {
 }
 
 // 显示欢迎页面
-function showWelcomePage() {
+export function showWelcomePage() {
+  const fileTree = document.getElementById('fileTree');
   const noDocsFolder = document.getElementById('no-docs-folder');
-  if (noDocsFolder) {
-    noDocsFolder.style.display = 'flex';
+  const selectBtn = document.getElementById('select-docs-folder-btn');
+  const sidebarContent = document.getElementById('sidebar-content');
+
+  if (fileTree) {
+    fileTree.classList.add('hidden');
+    fileTree.classList.remove('flex', 'flex-col', 'w-full');
   }
-  loadWelcomePage();
+  if (noDocsFolder) {
+    noDocsFolder.style.display = 'block';
+  }
+  if (selectBtn) {
+    selectBtn.style.display = 'flex';
+  }
+  if (sidebarContent) {
+    sidebarContent.classList.add('justify-end');
+  }
+  
+  // 使用统一的 loadMarkdown 函数加载欢迎页面
+  loadMarkdown('/assets/docs/welcome.md', 'welcome.md');
 }
 
 // 选择文档库位置
-async function selectDocsFolder() {
+export async function selectDocsFolder() {
   try {
-    console.log('开始选择文档库位置');
-    // 使用 showDirectoryPicker API 让用户选择文件夹
-    const dirHandle = await window.showDirectoryPicker({
-      mode: 'read',
-      startIn: 'documents'
-    });
-    
-    console.log('用户选择的文件夹:', dirHandle.name);
-
-    // 保存文件夹句柄
-    const saved = await saveDocsFolder(dirHandle);
-    if (saved) {
-      // 显示成功提示
-      showSuccess('文档库已加载');
-      // 重新加载文件树
-      await loadMarkdownFiles();
-      hideWelcomePage();
+    // 检查浏览器是否支持 showDirectoryPicker API
+    if ('showDirectoryPicker' in window) {
+      // Chrome 等支持 showDirectoryPicker 的浏览器
+      const dirHandle = await window.showDirectoryPicker({
+        mode: 'read',
+        startIn: 'documents'
+      });
+      
+      // 保存文件夹句柄
+      const saved = await saveDocsFolder(dirHandle);
+      if (saved) {
+        showSuccess('文档库已加载');
+        await loadMarkdownFiles();
+        hideWelcomePage();
+      } else {
+        showError('无法访问文档库，请重试');
+      }
     } else {
-      showError('无法访问文档库，请重试');
+      // Safari 等不支持 showDirectoryPicker 的浏览器
+      showError('抱歉，您的浏览器暂不支持文件夹选择功能，建议使用 Chrome 浏览器。');
+      
+      // 可以考虑添加一个提示，引导用户使用 Chrome
+      const contentDiv = document.querySelector('.note-to-mp');
+      if (contentDiv) {
+        contentDiv.innerHTML = `
+          <div class="browser-compatibility-notice" style="padding: 20px; background: #fff5f5; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #e53e3e; margin-bottom: 10px;">浏览器兼容性提示</h2>
+            <p>当前功能需要使用支持文件系统访问 API 的浏览器。</p>
+            <p style="margin-top: 10px;">推荐使用以下浏览器：</p>
+            <ul style="margin-top: 10px; padding-left: 20px;">
+              <li>Chrome 86 或更高版本</li>
+              <li>Edge 86 或更高版本</li>
+              <li>Opera 72 或更高版本</li>
+            </ul>
+            <p style="margin-top: 10px;">
+              <a href="https://www.google.com/chrome/" target="_blank" style="color: #3182ce; text-decoration: underline;">
+                下载 Chrome 浏览器
+              </a>
+            </p>
+          </div>
+        `;
+      }
     }
   } catch (error) {
     if (error.name === 'AbortError') {
-      // 用户取消了选择，不需要显示错误
-      console.log('用户取消了选择');
       return;
     }
-    console.error('选择文档库位置失败:', error);
     showError('选择文档库位置失败，请重试');
   }
 }
 
-// 修改 loadMarkdownFiles 函数，使用保存的文档库路径
-async function loadMarkdownFiles() {
+// 修改 loadMarkdownFiles 函数，加载成功后隐藏选择文件夹按钮和提示
+export async function loadMarkdownFiles() {
   const dirHandle = getDocsFolder();
   if (!dirHandle) {
-    // 如果没有选择文档库，静默返回，不显示错误
     return;
   }
-  
+
   try {
-    // 清空文件树
     const fileTree = document.getElementById('fileTree');
+    const noDocsFolder = document.getElementById('no-docs-folder');
+    const selectBtn = document.getElementById('select-docs-folder-btn');
+    const sidebarContent = document.getElementById('sidebar-content');
+
+    // 隐藏欢迎内容，显示文件树
+    if (noDocsFolder) noDocsFolder.style.display = 'none';
+    if (selectBtn) selectBtn.style.display = 'none';
+    if (fileTree) {
+      fileTree.classList.remove('hidden');
+      fileTree.classList.add('flex', 'flex-col', 'w-full');
+      sidebarContent.classList.remove('justify-end');
+    }
+
     fileTree.innerHTML = '';
-    
-    // 递归读取文件夹内容
-    await readDirectory(dirHandle, fileTree);
+
+    // 添加当前文件夹名称（固定在顶部）
+    const folderName = document.createElement('div');
+    folderName.className = 'text-[22px] font-black leading-[120%] tracking-[-0.05em] text-[#445564] mb-4 pl-4';
+    folderName.textContent = dirHandle.name;
+    fileTree.appendChild(folderName);
+
+    // 创建文件树容器（可滚动区域）
+    const treeContainer = document.createElement('div');
+    treeContainer.className = 'overflow-y-auto max-h-[calc(100vh-180px)]';
+    fileTree.appendChild(treeContainer);
+
+    await readDirectory(dirHandle, treeContainer);
   } catch (error) {
-    console.error('加载文件失败:', error);
     showError('加载文件失败，请重试');
   }
 }
 
-// 递归读取目录内容
-async function readDirectory(dirHandle, parentElement, isRoot = true) {
+// 递归检查目录是否包含 markdown 文件
+async function hasMarkdownInDirectory(dirHandle) {
   try {
-    console.log('读取目录:', {
-      name: dirHandle.name,
-      isRoot,
-      path: await getDirectoryPath(dirHandle)
-    });
+    for await (const entry of dirHandle.values()) {
+      // 跳过隐藏文件
+      if (entry.name.startsWith('.')) {
+        continue;
+      }
 
+      if (entry.kind === 'file') {
+        // 检查是否为有效的 markdown 文件
+        if (entry.name.endsWith('.md') && !entry.name.includes('{{')) {
+          return true;
+        }
+      } else if (entry.kind === 'directory') {
+        // 递归检查子目录
+        const hasMarkdown = await hasMarkdownInDirectory(entry);
+        if (hasMarkdown) {
+          return true;
+        }
+      }
+    }
+    return false;
+  } catch (error) {
+    return false;
+  }
+}
+
+// 递归读取目录内容
+async function readDirectory(dirHandle, parentElement, relativePath = '') {
+  try {
     const ul = document.createElement('ul');
+    ul.classList.add('list-none', 'p-0', 'm-0');
     parentElement.appendChild(ul);
 
-    // 获取所有条目并排序
     const entries = [];
     for await (const entry of dirHandle.values()) {
-      // 处理文件名中的前导空格
       const displayName = entry.name.trim();
       const isHidden = displayName.startsWith('.');
       
-      console.log('发现条目:', {
-        originalName: entry.name,
-        displayName: displayName,
-        kind: entry.kind,
-        isHidden: isHidden,
-        path: await getEntryPath(entry)
-      });
-      
-      // 只跳过隐藏文件，显示所有文件夹
-      if (entry.kind === 'file' && isHidden) {
-        console.log('跳过隐藏文件:', entry.name);
+      // 跳过隐藏文件
+      if (isHidden) {
         continue;
       }
+
+      // 如果是文件夹，检查是否包含 md 文件（包括子目录）
+      if (entry.kind === 'directory') {
+        const containsMarkdown = await hasMarkdownInDirectory(entry);
+        if (!containsMarkdown) {
+          continue;
+        }
+      }
+
       entries.push(entry);
     }
-    
-    console.log('处理后的条目列表:', entries.map(e => ({
-      originalName: e.name,
-      displayName: e.name.trim(),
-      kind: e.kind
-    })));
-    
-    // 先按类型排序（文件夹在前），再按名称排序（忽略前导空格）
+
     entries.sort((a, b) => {
       if (a.kind !== b.kind) {
         return a.kind === 'directory' ? -1 : 1;
@@ -402,86 +546,88 @@ async function readDirectory(dirHandle, parentElement, isRoot = true) {
       return a.name.trim().localeCompare(b.name.trim());
     });
 
-    // 如果是根目录且只有一个文件夹，直接显示其内容
-    if (isRoot && entries.length === 1 && entries[0].kind === 'directory') {
-      console.log('根目录只有一个文件夹，直接显示其内容:', entries[0].name.trim());
-      const subDirHandle = await dirHandle.getDirectoryHandle(entries[0].name);
-      await readDirectory(subDirHandle, parentElement, false);
-      return;
-    }
-
     for (const entry of entries) {
       const li = document.createElement('li');
+      li.classList.add('my-1');
       const displayName = entry.name.trim();
-      
-      if (entry.kind === 'file' && entry.name.endsWith('.md')) {
-        // 文件节点
+
+      if (entry.kind === 'file' && entry.name.endsWith('.md') && !entry.name.includes('{{')) {
         const span = document.createElement('span');
-        span.innerHTML = '<img src="/assets/ui/icons/nav/markdown.svg" class="tree-icon" alt="markdown">' + displayName;
-        span.style.cursor = 'pointer';
+        span.className = 'flex items-center text-sm font-bold text-[#445564] py-1 cursor-pointer hover:bg-[#f5f7fa] group';
+        // 移除 .md 后缀
+        const displayNameWithoutExt = displayName.replace(/\.md$/, '');
+        span.innerHTML = `
+          <img src="/assets/icons/filetreeArrow.svg" style="width:3px;height:3px;" class="mr-2 flex-shrink-0" alt="file">
+          <span>${displayNameWithoutExt}</span>
+        `;
         span.onclick = async () => {
           try {
             const file = await entry.getFile();
             const content = await file.text();
-            loadMarkdown(content);
+            loadMarkdown(content, displayName);
           } catch (error) {
-            console.error('读取文件失败:', error);
             showError('读取文件失败，请重试');
           }
         };
         li.appendChild(span);
+        ul.appendChild(li);
       } else if (entry.kind === 'directory') {
-        // 文件夹节点
         const span = document.createElement('span');
-        span.innerHTML = '<img src="/assets/ui/icons/nav/folder-arrow.svg" class="tree-icon" alt="folder">' + displayName;
-        span.style.cursor = 'pointer';
-        
-        // 创建子目录的容器
+        span.dataset.state = 'collapsed';
+        span.className = 'flex items-center text-sm font-bold text-[#445564] py-1 cursor-pointer hover:bg-[#f5f7fa] group';
+        span.innerHTML = `
+          <img src="/assets/icons/filetreeArrow.svg" style="width:10px;height:10px;" class="mr-2 flex-shrink-0 transition-transform duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] group-data-[state=expanded]:rotate-90" alt="folder">
+          <span>${displayName}</span>
+        `;
+
+              // 创建内容容器
+      const wrapper = document.createElement('div');
+      wrapper.className = 'grid transition-[grid-template-rows] duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]';
+      wrapper.dataset.state = 'collapsed';
+      wrapper.style.gridTemplateRows = '0fr';
+
+        const inner = document.createElement('div');
+        inner.className = 'overflow-hidden';
+        wrapper.appendChild(inner);
+
         const subUl = document.createElement('ul');
-        subUl.style.display = 'none';
-        
-        // 点击文件夹时展开/折叠
+        subUl.className = 'list-none p-0 m-0 ml-3';
+        inner.appendChild(subUl);
+
         span.onclick = async (event) => {
           event.stopPropagation();
-          
-          const isHidden = subUl.style.display === 'none';
-          
-          // 如果是展开操作
-          if (isHidden) {
+          const isCollapsed = span.dataset.state === 'collapsed';
+
+          if (isCollapsed) {
             try {
-              // 如果子目录还没有加载过，则加载它
               if (subUl.children.length === 0) {
-                console.log('加载子目录:', displayName);
                 const subDirHandle = await dirHandle.getDirectoryHandle(entry.name);
-                await readDirectory(subDirHandle, subUl, false);
+                const newRelativePath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+                await readDirectory(subDirHandle, subUl, newRelativePath);
               }
-              subUl.style.display = 'block';
-              const icon = span.querySelector('.tree-icon');
-              if (icon) {
-                icon.style.transform = 'rotate(90deg)';
-              }
+              
+                          // 展开动画
+            span.dataset.state = 'expanded';
+            wrapper.dataset.state = 'expanded';
+            wrapper.style.gridTemplateRows = '1fr';
             } catch (error) {
-              console.error('读取子目录失败:', error);
               showError('读取子目录失败，请重试');
               return;
             }
           } else {
-            subUl.style.display = 'none';
-            const icon = span.querySelector('.tree-icon');
-            if (icon) {
-              icon.style.transform = 'rotate(0deg)';
-            }
+            // 收起动画
+            span.dataset.state = 'collapsed';
+            wrapper.dataset.state = 'collapsed';
+            wrapper.style.gridTemplateRows = '0fr';
           }
         };
-        
+
         li.appendChild(span);
-        li.appendChild(subUl);
+        li.appendChild(wrapper);
+        ul.appendChild(li);
       }
-      
-      ul.appendChild(li);
     }
   } catch (error) {
-    console.error('读取目录失败:', error);
     showError('读取目录失败，请重试');
   }
 }
@@ -491,12 +637,12 @@ async function getDirectoryPath(dirHandle) {
   try {
     const path = [];
     let current = dirHandle;
-    
+
     while (current) {
       path.unshift(current.name);
       current = await current.getParent();
     }
-    
+
     return path.join('/');
   } catch (error) {
     return dirHandle.name;
@@ -519,66 +665,70 @@ function getDocsFolder() {
   return window._docsFolderHandle;
 }
 
-// 加载默认欢迎页面
-async function loadWelcomePage() {
-  try {
-    const response = await fetch('/assets/docs/welcome.md');
-    if (response.ok) {
-      const content = await response.text();
-      loadMarkdown(content);
-    } else {
-      throw new Error('Failed to load welcome page');
-    }
-  } catch (error) {
-    console.error('加载欢迎页面失败:', error);
-    showError('加载欢迎页面失败');
-  }
-}
-
 // 隐藏欢迎页面
 function hideWelcomePage() {
   const noDocsFolder = document.getElementById('no-docs-folder');
+  const selectBtn = document.getElementById('select-docs-folder-btn');
   if (noDocsFolder) {
     noDocsFolder.style.display = 'none';
   }
+  if (selectBtn) {
+    selectBtn.style.display = 'none';
+  }
 }
 
-// 初始化事件监听器
+// Menu functionality
 document.addEventListener('DOMContentLoaded', async () => {
-  // 侧边栏切换按钮
-  const toggleSidebarBtn = document.querySelector('.toggle-sidebar-btn');
-  const sidebar = document.getElementById('sidebar');
-  const content = document.getElementById('content');
-  
-  if (toggleSidebarBtn && sidebar && content) {
-    toggleSidebarBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('hidden');
-      content.classList.toggle('expanded');
-    });
-  }
+  try {
+    // 初始化侧边栏状态
+    initSidebarState();
+    
+    // 确保 markdown-it 已加载
+    if (typeof markdownit === 'undefined') {
+      throw new Error('markdown-it 未正确加载');
+    }
+    
+    // Toggle sidebar
+    const sidebarBtn = document.getElementById('sidebar-btn');
+    if (sidebarBtn) {
+      sidebarBtn.addEventListener('click', toggleSidebar);
+    }
 
-  // 刷新按钮
-  const refreshBtn = document.getElementById('refresh-btn');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => {
-      location.reload();
-    });
-  }
+    // 绑定菜单按钮事件
+    const refreshBtn = document.getElementById('refresh-btn');
+    if (refreshBtn) {
+      refreshBtn.onclick = () => location.reload();
+    }
 
-  // 选择文档库位置按钮（菜单中的）
-  const selectDocsFolderBtn = document.getElementById('select-docs-folder');
-  if (selectDocsFolderBtn) {
-    selectDocsFolderBtn.addEventListener('click', selectDocsFolder);
-  }
+    const copyToWechatBtn = document.getElementById('copy-to-wechat-btn');
+    if (copyToWechatBtn) {
+      copyToWechatBtn.onclick = async () => {
+        try {
+          await copyContentToClipboardWithStyle();
+        } catch (e) {
+          showError('复制失败');
+        }
+      };
+    }
 
-  // 选择文档库位置按钮（引导按钮）
-  const selectDocsFolderGuideBtn = document.getElementById('select-docs-folder-btn');
-  if (selectDocsFolderGuideBtn) {
-    selectDocsFolderGuideBtn.addEventListener('click', selectDocsFolder);
+    const copyHtmlBtn = document.getElementById('copy-html-btn');
+    if (copyHtmlBtn) {
+      copyHtmlBtn.onclick = async () => {
+        try {
+          if (!window.copyRawHtml) {
+            throw new Error('复制功能未正确加载');
+          }
+          await window.copyRawHtml();
+          showSuccess('已复制 HTML');
+        } catch (e) {
+          showError(`复制失败: ${e.message || '未知错误'}`);
+        }
+      };
+    }
+
+    // 初始化加载
+    checkAndRestoreDocsFolder();
+  } catch (error) {
+    showError('初始化应用失败，请刷新页面重试');
   }
-  
-  // 检查并恢复文档库
-  await checkAndRestoreDocsFolder();
 });
-
-// 初始化
