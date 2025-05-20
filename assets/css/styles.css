@@ -1,56 +1,12 @@
 @import "tailwindcss";
 
-/* 目录树样式统一优化（由 function.css 迁移） */
-#fileTree {
-  @apply w-[calc(100%-32px)] mx-4 mb-[50px] absolute top-[100px] left-0;
+:root {
+  --color-primary: #445564;
+  --color-background: #f5f7fa;
+  --color-gray: #9ca3af;
+  --color-red: #ef4444;
 }
 
-.current-folder-name {
-  @apply text-[22px] font-black leading-[120%] tracking-[-0.05em] text-[#445564] mb-4 pl-4;
-}
+/* 目录树样式统一优化 */
 
-.tree-container {
-  @apply overflow-y-auto max-h-[calc(100vh-180px)];
-}
-
-#fileTree ul {
-  @apply list-none p-0 m-0;
-}
-
-#fileTree li {
-  @apply my-1;
-}
-
-#fileTree span {
-  @apply flex items-center text-sm font-bold text-[#445564] py-1 cursor-pointer hover:bg-[#f5f7fa];
-}
-
-.tree-icon {
-  @apply mr-2;
-}
-
-.folder-icon {
-  @apply w-[10px] h-auto transition-transform duration-200;
-}
-
-.file-icon {
-  @apply w-[3px] h-auto;
-}
-
-#fileTree ul ul {
-  @apply ml-2;
-}
-
-.empty-folder {
-  @apply text-gray-400 italic text-sm py-1 px-2;
-}
-
-.error-node {
-  @apply text-red-500 italic text-sm py-1 px-2;
-}
-
-.sidebar-btn::after {
-  content: '';
-  @apply absolute -left-4 -top-2 -right-2 -bottom-2 z-[1];
-}
 

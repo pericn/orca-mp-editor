@@ -1,5 +1,183 @@
 ---
-description:
-globs:
-alwaysApply: false
+description: 
+globs: 
+alwaysApply: true
 ---
+# Tailwind CSS v4 开发规范
+
+## 1. 环境要求
+- 浏览器要求：Safari 16.4+, Chrome 111+, Firefox 128+
+- Node.js 20+ 环境
+- 现代构建工具支持（Vite 优先）
+- 不再支持旧版浏览器
+
+## 2. 构建工具配置
+### Vite 配置（推荐）
+```js
+import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
+
+export default defineConfig({
+  plugins: [tailwindcss()],
+});
+```
+
+### PostCSS 配置
+```js
+export default {
+  plugins: {
+    "@tailwindcss/postcss": {}, // 不再使用 tailwindcss/postcss
+  },
+};
+```
+
+## 3. 基础使用原则
+- 使用 CSS `@import` 替代 `@tailwind` 指令（v3 已废弃）
+- 优先使用 CSS 变量而不是 `theme()` 函数（v3 已废弃）
+- 使用新的 `@utility` API 定义自定义工具类（替代 v3 的 `@layer`）
+- 保持类名顺序一致性
+- 避免重复的样式定义
+- 使用语义化的类名
+- 不再使用 `@apply` 指令（v3 特性）
+
+## 4. 响应式设计
+- 移动优先设计原则
+- 变体堆叠顺序从左到右（v3 是右到左）
+- 使用新的媒体查询语法
+- 避免过度使用响应式类
+- 使用 `@media (hover: hover)` 处理交互
+- 不再使用 `@screen` 指令（v3 特性）
+
+## 5. 交互设计
+- hover 变体仅在支持 hover 的设备上生效
+- 使用 `@custom-variant` 自定义交互行为（替代 v3 的 `@variants`）
+- 过渡效果包含 outline-color
+- 考虑触摸设备的交互体验
+- 使用 CSS 变量控制动画时间
+- 不再使用 `group-hover` 等旧版变体（v3 特性）
+
+## 6. 组件框架集成
+### Vue/Svelte/CSS Modules
+- 使用 `@reference` 导入定义（替代 v3 的 `@import`）
+- 直接使用 CSS 变量替代 `@apply`
+- 样式隔离处理
+- 性能优化考虑
+- 保持组件样式的一致性
+- 不再使用 `@layer components`（v3 特性）
+
+## 7. 主题系统
+- 使用 CSS 变量访问主题值（替代 v3 的 `theme()`）
+- 避免使用 JavaScript 配置
+- 使用 `@config` 显式加载配置（替代 v3 的自动加载）
+- 保持主题一致性
+- 在 `:root` 中定义全局变量
+- 不再使用 `tailwind.config.js`（v3 特性）
+
+## 8. 性能优化
+- 零运行时设计
+- 使用 CSS 变量减少 JS 依赖
+- 优化构建大小
+- 控制重排重绘
+- 避免不必要的样式嵌套
+- 不再使用 JIT 模式（v3 特性）
+
+## 9. 可访问性
+- 考虑触摸设备支持
+- 保持键盘导航支持
+- 颜色对比度要求
+- 焦点状态管理
+- 使用语义化的 HTML 结构
+- 使用新的 `@custom-variant` 定义可访问性变体
+
+## 10. 开发规范
+### 代码组织
+- 使用 `@utility` 定义工具类（替代 v3 的 `@layer`）
+- 避免使用废弃的 API
+- 保持文件结构清晰
+- 遵循命名规范
+- 相关样式放在一起
+- 不再使用 `@layer` 指令（v3 特性）
+
+### 配置管理
+- 使用 CSS 变量管理主题
+- 避免使用 JavaScript 配置
+- 保持配置简洁
+- 记录配置变更
+- 同步更新相关文件
+- 使用 `@config` 显式加载配置
+
+## 11. 迁移指南
+### 从 v3 升级
+- 使用升级工具：`npx @tailwindcss/upgrade`
+- 检查浏览器兼容性
+- 更新构建工具配置
+- 测试功能兼容性
+- 同步更新相关文件
+- 移除所有 v3 特性
+
+### 语法更新
+- 变量语法：`[--var]` → `(--var)`
+- 变体顺序：右到左 → 左到右
+- 配置加载：自动 → 显式
+- 工具类定义：`@layer` → `@utility`
+- 样式定义：`@apply` → 原生 CSS
+- 主题访问：`theme()` → CSS 变量
+
+## 12. 最佳实践
+- 使用现代构建工具
+- 保持代码整洁
+- 遵循命名规范
+- 定期更新依赖
+- 测试浏览器兼容性
+- 监控性能指标
+- 保持文件同步更新
+- 避免使用 v3 特性
+
+## 13. 实践经验
+### 文件同步更新
+- 更新样式时同步更新 HTML 和 JS
+- 保持类名引用的一致性
+- 避免重复的 DOM 结构
+- 确保样式和功能对应
+- 检查并移除 v3 特性
+
+### 样式优化
+- 使用 CSS 变量定义颜色
+- 优化选择器结构
+- 减少样式重复
+- 保持样式模块化
+- 使用新的 `@utility` API
+
+### 组件结构
+- 清晰的组件层级
+- 避免样式冲突
+- 保持结构语义化
+- 优化交互体验
+- 使用新的变体系统
+
+## 14. v4 新特性
+### 核心变更
+- 新的 `@utility` API 替代 `@layer`
+- CSS 变量替代 `theme()` 函数
+- 显式配置加载替代自动加载
+- 新的变体系统
+- 改进的响应式设计
+- 更好的性能优化
+
+### 废弃特性
+- `@tailwind` 指令
+- `@apply` 指令
+- `@layer` 指令
+- `@screen` 指令
+- `theme()` 函数
+- JIT 模式
+- 自动配置加载
+- 旧版变体系统
+
+### 新增特性
+- CSS 变量支持
+- 新的媒体查询语法
+- 改进的响应式设计
+- 更好的性能优化
+- 新的变体系统
+- 显式配置加载

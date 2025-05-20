@@ -12,19 +12,19 @@
     "process": "^0.11.10"
   },
   "name": "orca-editor",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "main": "momOrca.js",
   "scripts": {
-    "dev": "node momOrca.js",
-    "build:css": "npx tailwindcss -i ./assets/css/tailwind.css -o ./assets/css/tailwind.output.css --watch",
-    "build": "npx tailwindcss -i ./assets/css/tailwind.css -o ./assets/css/tailwind.output.css --minify"
+    "start": "node momOrca.js",
+    "build:css": "npx tailwindcss -i ./assets/css/styles.css -o ./assets/css/tailwind.output.css --watch",
+    "build": "npx tailwindcss -i ./assets/css/styles.css -o ./assets/css/tailwind.output.css --minify",
+    "dev": "node momOrca.js && npx @tailwindcss/cli -i ./assets/css/styles.css -o ./assets/css/tailwind.output.css --watch"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "A lightweight Markdown editor",
   "devDependencies": {
-    "autoprefixer": "^10.4.16",
     "postcss": "^8.4.31",
     "tailwindcss": "^4.1.7"
   }

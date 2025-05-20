@@ -114,7 +114,6 @@ app.post('/api/inline-styles', express.json(), async (req, res) => {
     const resultHtml = dom.serialize();
     res.json({ html: resultHtml });
   } catch (error) {
-    console.error('Error processing styles:', error);
     res.status(500).json({ error: 'Failed to process styles' });
   }
 });
@@ -124,6 +123,4 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'orca.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running at http://localhost:${PORT}`);
-});
+app.listen(PORT);
